@@ -1,0 +1,1226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Detail | Indian Stock Market Analyzer</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #667eea;
+            --primary-dark: #764ba2;
+            --secondary: #f093fb;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --dark: #1e293b;
+            --light: #f8fafc;
+            --gray: #64748b;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; color: #333; }
+        .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+        .header { background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2); border-radius: 20px; padding: 30px; margin-bottom: 20px; text-align: center; color: white; }
+        .header h1 { font-size: 2em; margin-bottom: 5px; }
+        .header p { opacity: 0.9; }
+        .nav-bar { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        .nav-bar a { color: white; text-decoration: none; padding: 12px 24px; background: rgba(255,255,255,0.15); border-radius: 30px; transition: all 0.3s; font-weight: 500; border: 1px solid rgba(255,255,255,0.2); }
+        .nav-bar a:hover { background: white; color: var(--primary-dark); }
+        .nav-bar a.active { background: white; color: var(--primary-dark); font-weight: 600; }
+        .nav-bar a.active-nav { background: white; color: var(--primary-dark); font-weight: 600; }
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(10px);
+            padding: 12px 20px;
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
+            z-index: 1000;
+        }
+        .bottom-nav a {
+            color: var(--primary-dark);
+            text-decoration: none;
+            padding: 8px 16px;
+            background: #f1f5f9;
+            border-radius: 20px;
+            transition: all 0.3s;
+            font-size: 0.85em;
+            font-weight: 500;
+            border: 1px solid #e2e8f0;
+        }
+        .bottom-nav a:hover { background: var(--primary); color: white; }
+        .bottom-nav a.active { background: var(--primary); color: white; }
+        body { padding-bottom: 80px; }
+        .card { background: white; border-radius: 20px; padding: 25px; margin-bottom: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.1); }
+        .card h2 { color: var(--dark); margin-bottom: 15px; display: flex; align-items: center; gap: 10px; font-size: 1.3em; }
+        .card h2 i { color: var(--primary); }
+        .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px; }
+        .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+        .metric-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; }
+        .metric-card { background: #f8fafc; padding: 15px; border-radius: 12px; text-align: center; }
+        .metric-card .label { color: var(--gray); font-size: 0.85em; margin-bottom: 5px; }
+        .metric-card .value { font-size: 1.3em; font-weight: bold; color: var(--dark); }
+        .metric-card.green .value { color: var(--success); }
+        .metric-card.red .value { color: var(--danger); }
+        .metric-card.blue .value { color: var(--primary); }
+        .score-badge { padding: 8px 16px; border-radius: 20px; font-weight: bold; color: white; display: inline-block; }
+        .score-high { background: linear-gradient(135deg, var(--success), #059669); }
+        .score-medium { background: linear-gradient(135deg, var(--warning), #d97706); }
+        .score-low { background: linear-gradient(135deg, var(--danger), #dc2626); }
+        .recommendation { padding: 10px 20px; border-radius: 10px; text-align: center; font-weight: bold; display: inline-block; margin: 5px; }
+        .rec-strong-buy { background: #d1fae5; color: #065f46; }
+        .rec-buy { background: #dcfce7; color: #166534; }
+        .rec-hold { background: #fef3c7; color: #92400e; }
+        .rec-sell { background: #fee2e2; color: #991b1b; }
+        .rec-strong-sell { background: #fecaca; color: #7f1d1d; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #e2e8f0; }
+        th { background: #f8fafc; font-weight: 600; color: var(--gray); font-size: 0.85em; text-transform: uppercase; }
+        .chart-container { height: 300px; margin: 15px 0; }
+        .article-card { background: #f8fafc; padding: 15px; border-radius: 10px; margin-bottom: 10px; border-left: 4px solid var(--primary); }
+        .article-title { font-weight: 600; color: var(--dark); margin-bottom: 5px; }
+        .article-meta { font-size: 0.85em; color: var(--gray); }
+        .sentiment-badge { padding: 4px 12px; border-radius: 20px; font-size: 0.8em; font-weight: 500; }
+        .badge-green { background: #d1fae5; color: #065f46; }
+        .badge-red { background: #fee2e2; color: #991b1b; }
+        .badge-neutral { background: #e2e8f0; color: #475569; }
+        .loading { text-align: center; padding: 40px; }
+        .spinner { border: 4px solid #f3f3f3; border-top: 4px solid var(--primary); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto 15px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .strategy-card { background: #f8fafc; padding: 20px; border-radius: 15px; margin-bottom: 15px; }
+        .strategy-card h4 { color: var(--dark); margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+        .strategy-card h4 i { color: var(--primary); }
+        .indicator-group { margin-bottom: 15px; }
+        .indicator-group h5 { color: var(--dark); margin-bottom: 8px; font-size: 1em; }
+        .indicator-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; }
+        .indicator-item { background: white; padding: 10px; border-radius: 8px; text-align: center; }
+        .indicator-item .label { font-size: 0.8em; color: var(--gray); }
+        .indicator-item .value { font-size: 1.1em; font-weight: bold; color: var(--dark); }
+        .backtest-table { margin-top: 15px; }
+        .backtest-table th { background: #f1f5f9; }
+        .backtest-table .positive { color: var(--success); font-weight: 600; }
+        .backtest-table .negative { color: var(--danger); font-weight: 600; }
+
+        /* MiroFish inline agent cards */
+        .agent-card { transition: transform 0.3s, box-shadow 0.3s; }
+        .agent-card:hover { transform: translateY(-5px); box-shadow: 0 15px 40px rgba(0,0,0,0.15); }
+        .verdict-action { transition: all 0.3s; }
+
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
+        }
+
+        @media (max-width: 768px) { .grid-2 { grid-template-columns: 1fr; } .grid-3 { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-chart-line"></i> <span id="symbol">Loading...</span></h1>
+            <p><span id="company-name"></span> - Comprehensive Analysis</p>
+        </div>
+
+        <div class="nav-bar">
+            <a href="/">Home</a>
+            <a href="/research">Research</a>
+            <a href="/backtest">Backtest</a>
+            <a href="/portfolio">Portfolio</a>
+            <a href="javascript:history.back()">Back</a>
+        </div>
+
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+            <p>Loading comprehensive stock analysis...</p>
+        </div>
+
+        <div id="content" style="display:none;">
+            <!-- Price Overview -->
+            <div class="card">
+                <h2><i class="fas fa-rupee-sign"></i> Price Overview</h2>
+                <div class="metric-grid">
+                    <div class="metric-card blue">
+                        <div class="label">Current Price</div>
+                        <div class="value" id="current-price">-</div>
+                    </div>
+                    <div class="metric-card" id="price-change-card">
+                        <div class="label">Change %</div>
+                        <div class="value" id="price-change">-</div>
+                    </div>
+                    <div class="metric-card blue">
+                        <div class="label">Composite Score</div>
+                        <div class="value" id="composite-score">-</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="label">Recommendation</div>
+                        <div id="main-recommendation">-</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MiroFish AI Deep Analysis -->
+            <div class="card" id="mirofish-section" style="background: linear-gradient(135deg, #1e293b 0%, #334155 100%); color: white; text-align: center;">
+                <h2 style="color: white;"><i class="fas fa-brain"></i> MiroFish AI Deep Analysis</h2>
+                <p style="margin-bottom: 15px; opacity: 0.9;">Run 5 specialized AI agents (Technical, Fundamental, ML, Risk, Portfolio) on already-collected data for a final investment decision.</p>
+                <button id="mirofish-btn" onclick="runMirofishAnalysis()" style="display: inline-block; padding: 15px 40px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 30px; font-weight: bold; font-size: 1.1em; cursor: pointer; transition: transform 0.3s; box-shadow: 0 5px 20px rgba(0,0,0,0.3);">
+                    <i class="fas fa-play"></i> Run MiroFish Agents
+                </button>
+                                <div id="mirofish-loading" style="display: none; margin-top: 20px;">
+                    <div class="spinner" style="border-color: rgba(255,255,255,0.3); border-top-color: white; margin: 0 auto 10px;"></div>
+                    <p>Preparing data and starting agents...</p>
+                    <p style="font-size: 0.8em; opacity: 0.7;">Using kimi-k2.6:cloud model · ~2-3 min total</p>
+                </div>
+            </div>
+
+            <!-- MiroFish Inline Results -->
+            <div id="mirofish-results" style="display: none;">
+                <!-- Progress -->
+                <div class="card" style="background: white; border-radius: 20px; padding: 25px; margin-bottom: 25px; box-shadow: 0 5px 20px rgba(0,0,0,0.08);">
+                    <h3 style="color: var(--dark); margin-bottom: 15px; display: flex; align-items: center; gap: 10px;"><i class="fas fa-tasks" style="color: var(--primary);"></i> Analysis Progress</h3>
+                    <div style="height: 12px; background: #e2e8f0; border-radius: 10px; overflow: hidden;">
+                        <div id="mirofish-progress-fill" style="height: 100%; background: linear-gradient(90deg, var(--primary), var(--primary-dark)); border-radius: 10px; transition: width 0.5s ease; width: 0%;"></div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-top: 10px; font-size: 0.85em; color: var(--gray);">
+                        <span id="mf-step-1">1. Data Load</span>
+                        <span id="mf-step-2">2. Technical</span>
+                        <span id="mf-step-3">3. Fundamental</span>
+                        <span id="mf-step-4">4. ML/Quant</span>
+                        <span id="mf-step-5">5. Risk</span>
+                        <span id="mf-step-6">6. Portfolio</span>
+                    </div>
+                </div>
+
+                <!-- Agent Cards -->
+                <div class="card">
+                    <h2 style="color: var(--dark); margin-bottom: 20px; display: flex; align-items: center; gap: 10px;"><i class="fas fa-users" style="color: var(--primary);"></i> Expert Agents Panel</h2>
+                    <div id="mirofish-agents-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;"></div>
+                </div>
+
+                <!-- Final Verdict -->
+                <div id="mirofish-verdict-card" style="display: none; background: linear-gradient(135deg, #1e293b 0%, #334155 100%); color: white; border-radius: 20px; padding: 35px; text-align: center; box-shadow: 0 15px 50px rgba(0,0,0,0.2); margin-bottom: 25px;">
+                    <h2 style="color: white; justify-content: center; margin-bottom: 25px; display: flex; align-items: center; gap: 10px;"><i class="fas fa-gavel" style="color: var(--primary);"></i> Final Investment Decision</h2>
+                    <div id="mirofish-verdict-action" style="font-size: 2.5em; font-weight: 700; padding: 15px 40px; border-radius: 15px; display: inline-block; margin: 10px 0;">ANALYZING...</div>
+                    <div id="mirofish-verdict-confidence" style="font-size: 1.2em; margin-top: 15px; opacity: 0.9;"></div>
+                    <div id="mirofish-verdict-details" style="margin-top: 25px; text-align: left; background: rgba(255,255,255,0.1); border-radius: 15px; padding: 20px;"></div>
+                </div>
+
+                <!-- Retry button -->
+                <div id="mirofish-retry" style="display: none; text-align: center; margin-top: 20px;">
+                    <button onclick="runMirofishAnalysis()" style="display: inline-block; padding: 12px 30px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 25px; font-weight: bold; font-size: 1em; cursor: pointer;">
+                        <i class="fas fa-redo"></i> Run Again
+                    </button>
+                </div>
+            </div>
+
+            <!-- Price Chart -->
+            <div class="card">
+                <h2><i class="fas fa-chart-area"></i> Price Chart</h2>
+                <div class="chart-container">
+                    <canvas id="priceChart"></canvas>
+                </div>
+            </div>
+
+            <div class="grid-2">
+                <!-- Technical Analysis -->
+                <div class="card">
+                    <h2><i class="fas fa-wave-square"></i> Technical Analysis</h2>
+                    <div class="metric-grid">
+                        <div class="metric-card blue">
+                            <div class="label">Tech Score</div>
+                            <div class="value" id="tech-score">-</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="label">RSI</div>
+                            <div class="value" id="rsi">-</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="label">MACD</div>
+                            <div class="value" id="macd">-</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="label">ADX</div>
+                            <div class="value" id="adx">-</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="label">SMA 20</div>
+                            <div class="value" id="sma-20">-</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="label">SMA 50</div>
+                            <div class="value" id="sma-50">-</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="label">SMA 200</div>
+                            <div class="value" id="sma-200">-</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="label">BB Position</div>
+                            <div class="value" id="bb-position">-</div>
+                        </div>
+                    </div>
+                    <div style="margin-top:15px;">
+                        <h4 style="margin-bottom:10px;"><i class="fas fa-list"></i> Technical Signals</h4>
+                        <div id="tech-reasons"></div>
+                    </div>
+                </div>
+
+                <!-- ML Analysis -->
+                <div class="card">
+                    <h2><i class="fas fa-brain"></i> Machine Learning Analysis</h2>
+                    <div class="metric-grid">
+                        <div class="metric-card blue">
+                            <div class="label">ML Prediction</div>
+                            <div class="value" id="ml-prediction">-</div>
+                        </div>
+                        <div class="metric-card blue">
+                            <div class="label">Confidence</div>
+                            <div class="value" id="ml-confidence">-</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="label">Probability Up</div>
+                            <div class="value" id="ml-prob-up">-</div>
+                        </div>
+                    </div>
+                    <div style="margin-top:15px;" id="ml-details">
+                        <!-- ML details populated by JS -->
+                    </div>
+                    <div style="margin-top:15px;" id="lstm-section">
+                        <h4 style="margin-bottom:10px;"><i class="fas fa-chart-line"></i> LSTM Prediction</h4>
+                        <div id="lstm-content"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- News Sentiment -->
+            <div class="card">
+                <h2><i class="fas fa-newspaper"></i> News Sentiment Analysis</h2>
+                <div class="metric-grid" style="margin-bottom:20px;">
+                    <div class="metric-card blue">
+                        <div class="label">Sentiment Score</div>
+                        <div class="value" id="news-sentiment">-</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="label">Label</div>
+                        <div class="value" id="news-label">-</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="label">News Rec.</div>
+                        <div class="value" id="news-recommendation">-</div>
+                    </div>
+                </div>
+                <div id="articles"></div>
+            </div>
+
+            <!-- Strategy Evaluation - Which Strategy to Use Now -->
+            <div class="card">
+                <h2><i class="fas fa-chess-knight"></i> Strategy Evaluation - Which to Use Now</h2>
+                <div id="strategy-evaluation-intro"></div>
+                <div id="strategy-evaluation-cards"></div>
+                <div id="strategy-recommendation" style="margin-top: 20px;"></div>
+            </div>
+
+            <!-- Advanced Indicators -->
+            <div class="card">
+                <h2><i class="fas fa-chart-bar"></i> Advanced Technical Indicators</h2>
+                <div id="advanced-indicators"></div>
+            </div>
+
+            <!-- Backtest Strategies -->
+            <div class="card">
+                <h2><i class="fas fa-flask"></i> Strategy Backtest Results</h2>
+                <div class="backtest-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Strategy</th>
+                                <th>Total Return</th>
+                                <th>Annualized</th>
+                                <th>Sharpe</th>
+                                <th>Max Drawdown</th>
+                                <th>Trades</th>
+                                <th>Win Rate</th>
+                                <th>Profit Factor</th>
+                                <th>Avg Trade</th>
+                            </tr>
+                        </thead>
+                        <tbody id="backtest-results"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Technical History Chart -->
+            <div class="card">
+                <h2><i class="fas fa-history"></i> Technical Indicators History</h2>
+                <div class="chart-container">
+                    <canvas id="indicatorsChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Get symbol from URL
+        const pathParts = window.location.pathname.split('/');
+        const symbol = pathParts[pathParts.length - 1];
+        document.getElementById('symbol').textContent = symbol;
+
+        let priceChart, indicatorsChart;
+
+        // Store collected data for MiroFish
+        let collectedStockData = null;
+
+        async function loadStockDetail() {
+            try {
+                const response = await fetch(`/api/stock-detail/${symbol}`);
+                const data = await response.json();
+
+                if (data.error) {
+                    document.getElementById('loading').innerHTML = '<p style="color:red">Error: ' + data.error + '</p>';
+                    return;
+                }
+
+                // Store for MiroFish button
+                collectedStockData = data;
+
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('content').style.display = 'block';
+
+                // Populate header
+                document.getElementById('company-name').textContent = data.company_name || symbol;
+                document.getElementById('current-price').textContent = '₹' + (data.current_price?.toFixed(2) || '0.00');
+                const priceChange = data.price_change || 0;
+                const priceChangeEl = document.getElementById('price-change');
+                priceChangeEl.textContent = (priceChange >= 0 ? '+' : '') + priceChange.toFixed(2) + '%';
+                priceChangeEl.style.color = priceChange >= 0 ? 'var(--success)' : 'var(--danger)';
+                document.getElementById('price-change-card').className = 'metric-card ' + (priceChange >= 0 ? 'green' : 'red');
+
+                document.getElementById('composite-score').textContent = (data.composite?.score || 0).toFixed(1);
+                const rec = data.composite?.recommendation || 'HOLD';
+                const recEl = document.getElementById('main-recommendation');
+                recEl.innerHTML = `<span class="recommendation rec-${rec.toLowerCase().replace('_', '-')}">${rec}</span>`;
+
+                // Technical
+                const tech = data.technical?.details || {};
+                document.getElementById('tech-score').textContent = (data.technical?.score || 0).toFixed(0);
+                document.getElementById('rsi').textContent = tech.rsi?.toFixed(2) || 'N/A';
+                document.getElementById('macd').textContent = tech.macd?.toFixed(2) || 'N/A';
+                document.getElementById('adx').textContent = tech.adx?.toFixed(2) || 'N/A';
+                document.getElementById('sma-20').textContent = tech.sma_20?.toFixed(2) || 'N/A';
+                document.getElementById('sma-50').textContent = tech.sma_50?.toFixed(2) || 'N/A';
+                document.getElementById('sma-200').textContent = tech.sma_200?.toFixed(2) || 'N/A';
+                document.getElementById('bb-position').textContent = tech.bb_position?.toFixed(2) || 'N/A';
+
+                const reasonsDiv = document.getElementById('tech-reasons');
+                if (tech.reasons) {
+                    reasonsDiv.innerHTML = tech.reasons.map(r => `<div style="padding:5px 0;border-bottom:1px solid #e2e8f0;"><i class="fas fa-check-circle" style="color:var(--success)"></i> ${r}</div>`).join('');
+                }
+
+                // ML
+                const ml = data.ml || {};
+                document.getElementById('ml-prediction').textContent = ml.prediction || 'N/A';
+                document.getElementById('ml-confidence').textContent = (ml.confidence || 0) + '%';
+                document.getElementById('ml-prob-up').textContent = ((ml.prob_up || 0) * 100).toFixed(1) + '%';
+
+                // ML Details
+                const mlDetailsDiv = document.getElementById('ml-details');
+                if (ml.details && ml.details.ml_prediction) {
+                    const mp = ml.details.ml_prediction;
+                    mlDetailsDiv.innerHTML = `
+                        <div class="indicator-grid">
+                            <div class="indicator-item"><div class="label">Model</div><div class="value">${mp.model || 'N/A'}</div></div>
+                            <div class="indicator-item"><div class="label">Accuracy</div><div class="value">${mp.accuracy ? (mp.accuracy*100).toFixed(1)+'%' : 'N/A'}</div></div>
+                            <div class="indicator-item"><div class="label">Prob Up</div><div class="value">${mp.prob_up ? (mp.prob_up*100).toFixed(1)+'%' : 'N/A'}</div></div>
+                            <div class="indicator-item"><div class="label">Prob Down</div><div class="value">${mp.prob_down ? (mp.prob_down*100).toFixed(1)+'%' : 'N/A'}</div></div>
+                        </div>
+                    `;
+                }
+
+                // LSTM
+                const lstmDiv = document.getElementById('lstm-content');
+                if (ml.lstm) {
+                    if (ml.lstm.predictions) {
+                        lstmDiv.innerHTML = ml.lstm.predictions.map(p => `
+                            <div class="metric-card">
+                                <div class="label">Day ${p.day}</div>
+                                <div class="value" style="color:${p.change >= 0 ? 'var(--success)' : 'var(--danger)'}">₹${p.price} (${p.change >= 0 ? '+' : ''}${p.change}%)</div>
+                            </div>
+                        `).join('');
+                    } else if (ml.lstm.lstm_prediction) {
+                        lstmDiv.innerHTML = `
+                            <div class="metric-grid">
+                                <div class="metric-card blue">
+                                    <div class="label">Prediction</div>
+                                    <div class="value">${ml.lstm.lstm_prediction}</div>
+                                </div>
+                                <div class="metric-card blue">
+                                    <div class="label">Confidence</div>
+                                    <div class="value">${ml.lstm.lstm_confidence}%</div>
+                                </div>
+                                <div class="metric-card">
+                                    <div class="label">Prob Up</div>
+                                    <div class="value">${(ml.lstm.lstm_prob_up * 100).toFixed(1)}%</div>
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        lstmDiv.innerHTML = '<p style="color:var(--gray)">' + (ml.lstm.message || 'LSTM not available') + '</p>';
+                    }
+                } else {
+                    lstmDiv.innerHTML = '<p style="color:var(--gray)">LSTM prediction not available</p>';
+                }
+
+                // Contrarian Signal Detection
+                const composite = data.composite || {};
+                if (ml.lstm && composite.recommendation) {
+                    const isLSTMBullish = ml.lstm.lstm_prediction === 'BULLISH';
+                    const isLSTMBearish = ml.lstm.lstm_prediction === 'BEARISH';
+                    const isCompositeBullish = composite.recommendation.includes('BUY');
+                    const isCompositeBearish = composite.recommendation.includes('SELL');
+
+                    // Show contrarian notice when LSTM disagrees with composite
+                    if ((isLSTMBullish && isCompositeBearish) || (isLSTMBearish && isCompositeBullish)) {
+                        const contrarianDiv = document.createElement('div');
+                        contrarianDiv.className = 'info-card';
+                        contrarianDiv.style.cssText = 'background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; margin: 15px 0; padding: 15px; border-radius: 12px;';
+                        contrarianDiv.innerHTML = `
+                            <h4 style="margin-bottom: 10px;"><i class="fas fa-exclamation-triangle"></i> Contrarian Signal Detected</h4>
+                            <p>LSTM predicts <strong>${ml.lstm.lstm_prediction}</strong> (${ml.lstm.lstm_confidence}% confidence)
+                            while overall recommendation is <strong>${composite.recommendation}</strong>.</p>
+                            <p style="font-size: 0.9em; margin-top: 8px; opacity: 0.9;">
+                                The LSTM model detects patterns that may indicate a reversal.
+                                Consider this as an early warning signal.
+                            </p>
+                        `;
+                        lstmDiv.parentNode.insertBefore(contrarianDiv, lstmDiv.nextSibling);
+                    }
+
+                    // Show boost notice when LSTM boosts oversold stock
+                    const techScore = data.technical?.score || 0;
+                    if (techScore <= 35 && isLSTMBullish && ml.lstm.lstm_confidence > 60) {
+                        const boostDiv = document.createElement('div');
+                        boostDiv.className = 'info-card';
+                        boostDiv.style.cssText = 'background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); color: white; margin: 15px 0; padding: 15px; border-radius: 12px;';
+                        boostDiv.innerHTML = `
+                            <h4 style="margin-bottom: 10px;"><i class="fas fa-rocket"></i> LSTM Reversal Boost Applied</h4>
+                            <p>Stock is oversold (Technical Score: ${techScore}) but LSTM detects bullish momentum (${ml.lstm.lstm_confidence}% confidence).</p>
+                            <p style="font-size: 0.9em; margin-top: 8px; opacity: 0.9;">
+                                Composite score boosted due to potential reversal pattern.
+                            </p>
+                        `;
+                        lstmDiv.parentNode.insertBefore(boostDiv, lstmDiv.nextSibling);
+                    }
+                }
+
+                // Strategy Evaluation
+                const stratEval = data.strategy_evaluation || {};
+                const stratIntro = document.getElementById('strategy-evaluation-intro');
+                const stratCards = document.getElementById('strategy-evaluation-cards');
+                const stratRec = document.getElementById('strategy-recommendation');
+
+                if (stratEval.error) {
+                    stratIntro.innerHTML = '<p style="color:var(--gray)">Strategy evaluation not available.</p>';
+                } else {
+                    const marketCondition = stratEval.market_condition || {};
+                    let marketStatus = '';
+                    if (marketCondition.is_strong_trend) marketStatus = 'Strong Trend';
+                    else if (marketCondition.is_trending) marketStatus = 'Trending';
+                    else if (marketCondition.is_ranging) marketStatus = 'Range-Bound';
+                    else if (marketCondition.is_volatile) marketStatus = 'Volatile';
+                    else marketStatus = 'Mixed';
+
+                    stratIntro.innerHTML = `
+                        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px; border-radius: 12px; margin-bottom: 20px;">
+                            <h4 style="margin-bottom: 10px;"><i class="fas fa-chart-pie"></i> Market Condition Analysis</h4>
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px;">
+                                <div style="text-align: center;">
+                                    <div style="font-size: 1.5em; font-weight: bold;">${marketStatus}</div>
+                                    <div style="font-size: 0.8em; opacity: 0.9;">Market State</div>
+                                </div>
+                                <div style="text-align: center;">
+                                    <div style="font-size: 1.5em; font-weight: bold;">${marketCondition.adx || 'N/A'}</div>
+                                    <div style="font-size: 0.8em; opacity: 0.9;">ADX</div>
+                                </div>
+                                <div style="text-align: center;">
+                                    <div style="font-size: 1.5em; font-weight: bold;">${marketCondition.rsi || 'N/A'}</div>
+                                    <div style="font-size: 0.8em; opacity: 0.9;">RSI</div>
+                                </div>
+                                <div style="text-align: center;">
+                                    <div style="font-size: 1.5em; font-weight: bold;">${marketCondition.atr_pct || 'N/A'}%</div>
+                                    <div style="font-size: 0.8em; opacity: 0.9;">ATR %</div>
+                                </div>
+                            </div>
+                        </div>
+                        <p style="margin-bottom: 15px; color: var(--gray);">
+                            Based on current market conditions, <strong>${stratEval.favorable_count || 0} out of ${stratEval.total_strategies || 12}</strong> strategies are favorable.
+                        </p>
+                    `;
+
+                    const evaluations = stratEval.evaluations || {};
+                    const strategyNames = {
+                        'sma_crossover': 'SMA Crossover',
+                        'rsi_strategy': 'RSI Strategy',
+                        'macd_strategy': 'MACD Strategy',
+                        'bollinger_strategy': 'Bollinger Bands',
+                        'combined': 'Combined Strategy',
+                        'adx_strategy': 'ADX Trend Strength',
+                        'supertrend_strategy': 'SuperTrend',
+                        'ichimoku_strategy': 'Ichimoku Cloud',
+                        'breakout_strategy': 'Breakout Strategy',
+                        'mean_reversion': 'Mean Reversion',
+                        'momentum_strategy': 'Momentum Strategy',
+                        'multi_timeframe': 'Multi-Timeframe'
+                    };
+
+                    const strategyDescriptions = {
+                        'sma_crossover': 'Trend following using moving average crossovers',
+                        'rsi_strategy': 'Mean reversion based on RSI extremes',
+                        'macd_strategy': 'Momentum trading with MACD signals',
+                        'bollinger_strategy': 'Volatility-based mean reversion',
+                        'combined': 'Multiple confirmation strategy',
+                        'adx_strategy': 'Trend strength based trading',
+                        'supertrend_strategy': 'ATR-based trailing stop system',
+                        'ichimoku_strategy': 'Japanese trend cloud system',
+                        'breakout_strategy': 'Range breakout trading',
+                        'mean_reversion': 'Statistical mean reversion',
+                        'momentum_strategy': 'Rate of change momentum',
+                        'multi_timeframe': 'Multiple timeframe alignment'
+                    };
+
+                    let cardsHTML = '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px;">';
+
+                    for (const [key, eval] of Object.entries(evaluations)) {
+                        const isFavorable = eval.favorable;
+                        const score = eval.score || 0;
+                        const maxScore = eval.max_score || 100;
+                        const percentage = (score / maxScore) * 100;
+                        const reasons = eval.reasons || [];
+                        const info = eval.info || {};
+
+                        const cardClass = isFavorable ? 'border-left: 4px solid var(--success);' : 'border-left: 4px solid var(--danger);';
+                        const statusIcon = isFavorable ? '<i class="fas fa-check-circle" style="color: var(--success);"></i>' : '<i class="fas fa-times-circle" style="color: var(--danger);"></i>';
+                        const statusText = isFavorable ? 'FAVORABLE' : 'Not Favorable';
+                        const scoreColor = percentage >= 70 ? 'var(--success)' : percentage >= 50 ? 'var(--warning)' : 'var(--danger)';
+
+                        cardsHTML += `
+                            <div style="background: #f8fafc; padding: 15px; border-radius: 12px; ${cardClass}">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                    <h4 style="margin: 0; color: var(--dark);">${strategyNames[key] || key}</h4>
+                                    <span style="font-weight: bold; font-size: 0.9em;">${statusIcon} ${statusText}</span>
+                                </div>
+                                <p style="font-size: 0.85em; color: var(--gray); margin-bottom: 10px;">${strategyDescriptions[key] || info.description || ''}</p>
+                                <div style="margin-bottom: 10px;">
+                                    <div style="background: #e2e8f0; border-radius: 10px; height: 8px; overflow: hidden;">
+                                        <div style="width: ${percentage}%; background: ${scoreColor}; height: 100%; border-radius: 10px; transition: width 0.3s;"></div>
+                                    </div>
+                                    <div style="text-align: right; font-size: 0.8em; color: var(--gray); margin-top: 4px;">${score}/${maxScore} (${percentage.toFixed(0)}%)</div>
+                                </div>
+                                <div style="font-size: 0.85em;">
+                                    ${reasons.map(r => `<div style="padding: 3px 0;"><i class="fas fa-info-circle" style="color: var(--primary); margin-right: 5px;"></i>${r}</div>`).join('')}
+                                </div>
+                            </div>
+                        `;
+                    }
+
+                    cardsHTML += '</div>';
+                    stratCards.innerHTML = cardsHTML;
+
+                    // Overall recommendation
+                    const favorableList = stratEval.favorable_strategies || [];
+                    let recHTML = '';
+
+                    if (favorableList.length === 0) {
+                        recHTML = `
+                            <div style="background: #fef3c7; border: 2px solid #f59e0b; padding: 20px; border-radius: 12px;">
+                                <h4 style="color: #92400e; margin-bottom: 10px;"><i class="fas fa-exclamation-triangle"></i> No Strategy Clearly Favorable</h4>
+                                <p style="color: #92400e;">Current market conditions don't strongly favor any specific strategy. Consider:</p>
+                                <ul style="color: #92400e; margin-left: 20px; margin-top: 8px;">
+                                    <li>Waiting for clearer signals</li>
+                                    <li>Reducing position size</li>
+                                    <li>Using the Combined Strategy for safety</li>
+                                    <li>Monitoring for trend development</li>
+                                </ul>
+                            </div>
+                        `;
+                    } else if (favorableList.includes('combined') && favorableList.length > 1) {
+                        const otherFavorable = favorableList.filter(s => s !== 'combined');
+                        recHTML = `
+                            <div style="background: #d1fae5; border: 2px solid var(--success); padding: 20px; border-radius: 12px;">
+                                <h4 style="color: #065f46; margin-bottom: 10px;"><i class="fas fa-star"></i> Strong Setup - Combined Strategy + ${otherFavorable.length} Others Favorable</h4>
+                                <p style="color: #065f46;"><strong>Recommendation:</strong> Use the <strong>Combined Strategy</strong> for confirmation.</p>
+                                <p style="color: #065f46; margin-top: 8px;">Additionally favorable: ${otherFavorable.map(s => strategyNames[s] || s).join(', ')}.</p>
+                                <p style="color: #065f46; margin-top: 8px;">Multiple confirmations reduce risk and increase probability of successful trades.</p>
+                            </div>
+                        `;
+                    } else if (favorableList.includes('combined')) {
+                        recHTML = `
+                            <div style="background: #d1fae5; border: 2px solid var(--success); padding: 20px; border-radius: 12px;">
+                                <h4 style="color: #065f46; margin-bottom: 10px;"><i class="fas fa-check-circle"></i> Combined Strategy Favorable</h4>
+                                <p style="color: #065f46;"><strong>Recommendation:</strong> Use the <strong>Combined Strategy</strong> with multiple confirmations.</p>
+                                <p style="color: #065f46; margin-top: 8px;">This strategy requires multiple indicators to align before entering trades, providing safer entry points.</p>
+                            </div>
+                        `;
+                    } else if (favorableList.length === 1) {
+                        recHTML = `
+                            <div style="background: #dbeafe; border: 2px solid var(--primary); padding: 20px; border-radius: 12px;">
+                                <h4 style="color: #1e40af; margin-bottom: 10px;"><i class="fas fa-lightbulb"></i> Single Strategy Favorable</h4>
+                                <p style="color: #1e40af;"><strong>Recommendation:</strong> Use <strong>${strategyNames[favorableList[0]] || favorableList[0]}</strong> strategy.</p>
+                                <p style="color: #1e40af; margin-top: 8px;">Consider waiting for additional confirmation or use smaller position sizes.</p>
+                            </div>
+                        `;
+                    } else {
+                        recHTML = `
+                            <div style="background: #d1fae5; border: 2px solid var(--success); padding: 20px; border-radius: 12px;">
+                                <h4 style="color: #065f46; margin-bottom: 10px;"><i class="fas fa-star"></i> Multiple Strategies Favorable (${favorableList.length})</h4>
+                                <p style="color: #065f46;"><strong>Recommendation:</strong> Multiple strategies are favorable.</p>
+                                <p style="color: #065f46; margin-top: 8px;">Favorable strategies: ${favorableList.map(s => strategyNames[s] || s).join(', ')}.</p>
+                                <p style="color: #065f46; margin-top: 8px;">Consider the Combined Strategy to benefit from multiple confirmations.</p>
+                            </div>
+                        `;
+                    }
+
+                    stratRec.innerHTML = recHTML;
+                }
+
+                // News
+                const news = data.news || {};
+                document.getElementById('news-sentiment').textContent = (news.sentiment_score || 0).toFixed(1);
+                document.getElementById('news-label').textContent = news.label || 'N/A';
+                document.getElementById('news-recommendation').textContent = news.recommendation || 'N/A';
+
+                const articlesDiv = document.getElementById('articles');
+                if (news.articles && news.articles.length > 0) {
+                    articlesDiv.innerHTML = news.articles.map(a => {
+                        const sentiment = a.sentiment || {};
+                        const badgeClass = sentiment.label === 'POSITIVE' ? 'badge-green' : sentiment.label === 'NEGATIVE' ? 'badge-red' : 'badge-neutral';
+                        return `
+                            <div class="article-card">
+                                <div class="article-title">${a.title}</div>
+                                <div class="article-meta">
+                                    <span class="sentiment-badge ${badgeClass}">${sentiment.label || 'N/A'}</span>
+                                    <span>Score: ${sentiment.score || 0}</span>
+                                    <span>Source: ${a.source}</span>
+                                    <span>${new Date(a.published_date).toLocaleDateString()}</span>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                } else {
+                    articlesDiv.innerHTML = '<p style="color:var(--gray)">No news articles found.</p>';
+                }
+
+                // Advanced Indicators
+                const advDiv = document.getElementById('advanced-indicators');
+                const adv = data.advanced_indicators || {};
+                if (adv.error) {
+                    advDiv.innerHTML = '<p style="color:var(--gray)">Advanced indicators not available.</p>';
+                } else {
+                    let advHTML = '';
+
+                    if (adv.ichimoku_cloud) {
+                        const ic = adv.ichimoku_cloud;
+                        advHTML += `
+                            <div class="strategy-card">
+                                <h4><i class="fas fa-cloud"></i> Ichimoku Cloud</h4>
+                                <div class="indicator-grid">
+                                    <div class="indicator-item"><div class="label">Tenkan-sen</div><div class="value">${ic.tenkan_sen || 'N/A'}</div></div>
+                                    <div class="indicator-item"><div class="label">Kijun-sen</div><div class="value">${ic.kijun_sen || 'N/A'}</div></div>
+                                    <div class="indicator-item"><div class="label">Senkou A</div><div class="value">${ic.senkou_span_a || 'N/A'}</div></div>
+                                    <div class="indicator-item"><div class="label">Senkou B</div><div class="value">${ic.senkou_span_b || 'N/A'}</div></div>
+                                    <div class="indicator-item"><div class="label">Chikou</div><div class="value">${ic.chikou_span || 'N/A'}</div></div>
+                                </div>
+                            </div>
+                        `;
+                    }
+
+                    if (adv.fibonacci) {
+                        const fib = adv.fibonacci;
+                        advHTML += `
+                            <div class="strategy-card">
+                                <h4><i class="fas fa-ruler"></i> Fibonacci Levels</h4>
+                                <div class="indicator-grid">
+                                    <div class="indicator-item"><div class="label">0%</div><div class="value">${fib.level_0 || 'N/A'}</div></div>
+                                    <div class="indicator-item"><div class="label">23.6%</div><div class="value">${fib.level_23_6 || 'N/A'}</div></div>
+                                    <div class="indicator-item"><div class="label">38.2%</div><div class="value">${fib.level_38_2 || 'N/A'}</div></div>
+                                    <div class="indicator-item"><div class="label">50%</div><div class="value">${fib.level_50 || 'N/A'}</div></div>
+                                    <div class="indicator-item"><div class="label">61.8%</div><div class="value">${fib.level_61_8 || 'N/A'}</div></div>
+                                    <div class="indicator-item"><div class="label">78.6%</div><div class="value">${fib.level_78_6 || 'N/A'}</div></div>
+                                </div>
+                            </div>
+                        `;
+                    }
+
+                    if (adv.volume_profile) {
+                        const vp = adv.volume_profile;
+                        advHTML += `
+                            <div class="strategy-card">
+                                <h4><i class="fas fa-chart-bar"></i> Volume Profile</h4>
+                                <div class="indicator-grid">
+                                    <div class="indicator-item"><div class="label">VWAP</div><div class="value">${vp.vwap || 'N/A'}</div></div>
+                                    <div class="indicator-item"><div class="label">OBV</div><div class="value">${vp.obv || 'N/A'}</div></div>
+                                    <div class="indicator-item"><div class="label">MFI</div><div class="value">${vp.mfi || 'N/A'}</div></div>
+                                </div>
+                            </div>
+                        `;
+                    }
+
+                    if (adv.momentum) {
+                        const mom = adv.momentum;
+                        advHTML += `
+                            <div class="strategy-card">
+                                <h4><i class="fas fa-tachometer-alt"></i> Momentum</h4>
+                                <div class="indicator-grid">
+                                    <div class="indicator-item"><div class="label">Stoch K</div><div class="value">${mom.stoch_k || 'N/A'}</div></div>
+                                    <div class="indicator-item"><div class="label">Stoch D</div><div class="value">${mom.stoch_d || 'N/A'}</div></div>
+                                    <div class="indicator-item"><div class="label">CCI</div><div class="value">${mom.cci || 'N/A'}</div></div>
+                                    <div class="indicator-item"><div class="label">Williams %R</div><div class="value">${mom.williams_r || 'N/A'}</div></div>
+                                </div>
+                            </div>
+                        `;
+                    }
+
+                    if (adv.volatility) {
+                        const vol = adv.volatility;
+                        advHTML += `
+                            <div class="strategy-card">
+                                <h4><i class="fas fa-wave-square"></i> Volatility</h4>
+                                <div class="indicator-grid">
+                                    <div class="indicator-item"><div class="label">ATR</div><div class="value">${vol.atr || 'N/A'}</div></div>
+                                    <div class="indicator-item"><div class="label">Keltner Upper</div><div class="value">${vol.keltner_upper || 'N/A'}</div></div>
+                                    <div class="indicator-item"><div class="label">Keltner Lower</div><div class="value">${vol.keltner_lower || 'N/A'}</div></div>
+                                </div>
+                            </div>
+                        `;
+                    }
+
+                    advDiv.innerHTML = advHTML || '<p style="color:var(--gray)">No advanced indicators available.</p>';
+                }
+
+                // Backtest Results
+                const backtestBody = document.getElementById('backtest-results');
+                const bt = data.backtest || {};
+                if (bt.error) {
+                    backtestBody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--gray)">Backtest data not available</td></tr>';
+                } else {
+                    const strategies = {
+                        'sma_crossover': 'SMA Crossover',
+                        'rsi_strategy': 'RSI Strategy',
+                        'macd_strategy': 'MACD Strategy',
+                        'bollinger_strategy': 'Bollinger Bands',
+                        'combined': 'Combined Strategy'
+                    };
+                    backtestBody.innerHTML = Object.keys(strategies).map(key => {
+                        const s = bt[key] || {};
+                        return `
+                            <tr>
+                                <td><strong>${strategies[key]}</strong></td>
+                                <td>${(s.total_return || 0).toFixed(2)}%</td>
+                                <td>${(s.buy_hold_return || 0).toFixed(2)}%</td>
+                                <td>${(s.sharpe_ratio || 0).toFixed(2)}</td>
+                                <td class="negative">${(s.max_drawdown || 0).toFixed(2)}%</td>
+                                <td>${s.total_trades || 0}</td>
+                                <td>${(s.win_rate || 0).toFixed(1)}%</td>
+                                <td>${(s.outperformance || 0).toFixed(2)}%</td>
+                                <td>${s.total_trades || 0}</td>
+                            </tr>
+                        `;
+                    }).join('');
+                }
+
+                // Price Chart
+                if (data.chart_data && data.chart_data.length > 0) {
+                    const ctx = document.getElementById('priceChart').getContext('2d');
+                    priceChart = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: data.chart_data.map(d => d.date),
+                            datasets: [{
+                                label: 'Close Price',
+                                data: data.chart_data.map(d => d.close),
+                                borderColor: '#667eea',
+                                backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                                fill: true,
+                                tension: 0.4,
+                                pointRadius: 0
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { display: true }
+                            },
+                            scales: {
+                                x: { display: true, ticks: { maxTicksLimit: 10 } },
+                                y: { display: true, position: 'right' }
+                            }
+                        }
+                    });
+                } else {
+                    document.getElementById('priceChart').parentElement.style.display = 'none';
+                }
+
+                // Indicators Chart
+                if (data.tech_history && data.tech_history.length > 0) {
+                    const history = data.tech_history;
+                    const ctx2 = document.getElementById('indicatorsChart').getContext('2d');
+                    indicatorsChart = new Chart(ctx2, {
+                        type: 'line',
+                        data: {
+                            labels: history.map(d => d.date),
+                            datasets: [
+                                {
+                                    label: 'RSI',
+                                    data: history.map(d => d.rsi),
+                                    borderColor: '#f59e0b',
+                                    pointRadius: 0,
+                                    yAxisID: 'y'
+                                },
+                                {
+                                    label: 'MACD',
+                                    data: history.map(d => d.macd),
+                                    borderColor: '#10b981',
+                                    pointRadius: 0,
+                                    yAxisID: 'y1'
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { display: true }
+                            },
+                            scales: {
+                                x: { display: true },
+                                y: { type: 'linear', display: true, position: 'left', title: { display: true, text: 'RSI' } },
+                                y1: { type: 'linear', display: true, position: 'right', title: { display: true, text: 'MACD' }, grid: { drawOnChartArea: false } }
+                            }
+                        }
+                    });
+                } else {
+                    document.getElementById('indicatorsChart').parentElement.style.display = 'none';
+                }
+
+            } catch (error) {
+                document.getElementById('loading').innerHTML = '<p style="color:red">Error loading data: ' + error.message + '</p>';
+            }
+        }
+
+        // ================== MIROFISH INLINE ANALYSIS ==================
+        const mfAgentConfig = [
+            { id: 'technical', name: 'Technical Analyst', type: 'Technical Analyst', icon: 'fa-chart-line', avatarClass: 'technical', focus: 'Charts, indicators, trends' },
+            { id: 'fundamental', name: 'Fundamental Analyst', type: 'Fundamental Analyst', icon: 'fa-building', avatarClass: 'fundamental', focus: 'Financials, valuation, sector' },
+            { id: 'ml', name: 'ML Strategist', type: 'ML/Quant Strategist', icon: 'fa-robot', avatarClass: 'ml', focus: 'ML models, algorithms, stats' },
+            { id: 'risk', name: 'Risk Manager', type: 'Risk Manager', icon: 'fa-shield-alt', avatarClass: 'risk', focus: 'Volatility, drawdown, sizing' },
+            { id: 'portfolio', name: 'Portfolio Manager', type: 'Portfolio Manager', icon: 'fa-user-tie', avatarClass: 'portfolio', focus: 'Allocation, timing, fit' }
+        ];
+
+        let mirofishJobId = null;
+        let mirofishPollInterval = null;
+        let mirofishAgentsCompleted = new Set();
+
+        function mfCreateAgentCard(config) {
+            const avatarGradients = {
+                technical: '#3b82f6,#1d4ed8',
+                fundamental: '#10b981,#059669',
+                ml: '#8b5cf6,#6d28d9',
+                risk: '#f59e0b,#d97706',
+                portfolio: '#ef4444,#dc2626'
+            };
+            return `
+                <div class="agent-card waiting" id="mf-agent-${config.id}" data-agent="${config.id}" style="background: white; border-radius: 20px; padding: 25px; box-shadow: 0 5px 20px rgba(0,0,0,0.08); transition: all 0.4s ease; border: 2px solid transparent; position: relative; overflow: hidden;"
+                onmouseover="this.style.transform='translateY(-5px)';this.style.boxShadow='0 15px 40px rgba(0,0,0,0.15)';" onmouseout="this.style.transform='';this.style.boxShadow='';"
+                >
+                    <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
+                        <div style="width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.8em; color: white; flex-shrink: 0; background: linear-gradient(135deg, ${avatarGradients[config.id]});">
+                            <i class="fas ${config.icon}"></i>
+                        </div>
+                        <div>
+                            <h4 style="font-size: 1.1em; color: var(--dark); margin-bottom: 3px;">${config.name}</h4>
+                            <span style="font-size: 0.85em; color: var(--gray);">${config.focus}</span>
+                            <div style="margin-top: 5px;">
+                                <span id="mf-status-${config.id}" style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 20px; font-size: 0.85em; font-weight: 600; background: #e2e8f0; color: #475569;">
+                                    <i class="fas fa-clock"></i> Waiting
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="mf-thinking-${config.id}" style="display: none; align-items: center; gap: 8px; padding: 10px 0;">
+                        <div style="display: flex; gap: 4px;">
+                            <span style="width: 8px; height: 8px; border-radius: 50%; background: var(--primary); animation: bounce 1.4s infinite ease-in-out both; animation-delay: -0.32s;"></span>
+                            <span style="width: 8px; height: 8px; border-radius: 50%; background: var(--primary); animation: bounce 1.4s infinite ease-in-out both; animation-delay: -0.16s;"></span>
+                            <span style="width: 8px; height: 8px; border-radius: 50%; background: var(--primary); animation: bounce 1.4s infinite ease-in-out both;"></span>
+                        </div>
+                        <span>Analyzing data...</span>
+                    </div>
+                    <div id="mf-commentary-${config.id}" style="background: #f8fafc; border-radius: 12px; padding: 15px; font-size: 0.95em; line-height: 1.6; color: var(--dark); min-height: 80px; border-left: 4px solid #cbd5e1; color: #64748b; font-style: italic;">
+                        Waiting for data to begin analysis...
+                    </div>
+                </div>
+            `;
+        }
+
+        function mfRenderAgents() {
+            const grid = document.getElementById('mirofish-agents-grid');
+            grid.innerHTML = mfAgentConfig.map(a => mfCreateAgentCard(a)).join('');
+        }
+
+        function mfUpdateProgress(step, total) {
+            const pct = (step / total) * 100;
+            document.getElementById('mirofish-progress-fill').style.width = pct + '%';
+            for (let i = 1; i <= total; i++) {
+                const el = document.getElementById(`mf-step-${i}`);
+                if (!el) continue;
+                if (i < step) { el.style.color = 'var(--success)'; el.style.fontWeight = '600'; }
+                else if (i === step) { el.style.color = 'var(--primary)'; el.style.fontWeight = '600'; }
+                else { el.style.color = 'var(--gray)'; el.style.fontWeight = '500'; }
+            }
+        }
+
+        function mfSetAgentStatus(agentId, status, commentary) {
+            const card = document.getElementById(`mf-agent-${agentId}`);
+            const statusBadge = document.getElementById(`mf-status-${agentId}`);
+            const thinking = document.getElementById(`mf-thinking-${agentId}`);
+            const commentaryDiv = document.getElementById(`mf-commentary-${agentId}`);
+            if (!card || !statusBadge || !thinking || !commentaryDiv) return;
+
+            if (status === 'analyzing') {
+                card.style.borderColor = 'var(--primary)';
+                statusBadge.style.background = '#fef3c7';
+                statusBadge.style.color = '#92400e';
+                statusBadge.innerHTML = '<i class="fas fa-cog fa-spin"></i> Analyzing';
+                thinking.style.display = 'flex';
+                commentaryDiv.style.borderLeftColor = 'var(--primary)';
+                commentaryDiv.style.color = 'var(--dark)';
+                commentaryDiv.style.fontStyle = 'normal';
+                commentaryDiv.textContent = 'Processing indicators and signals...';
+            } else if (status === 'done') {
+                card.style.borderColor = 'var(--success)';
+                statusBadge.style.background = '#d1fae5';
+                statusBadge.style.color = '#065f46';
+                statusBadge.innerHTML = '<i class="fas fa-check"></i> Complete';
+                thinking.style.display = 'none';
+                commentaryDiv.style.borderLeftColor = 'var(--success)';
+                commentaryDiv.style.color = 'var(--dark)';
+                commentaryDiv.style.fontStyle = 'normal';
+                let html = commentary || 'Analysis complete.';
+                if (typeof html === 'string' && html.startsWith('[ERROR:')) {
+                    html = '<span style="color: #dc2626;">' + html + '</span>';
+                }
+                commentaryDiv.innerHTML = html;
+                card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+        }
+
+        async function runMirofishAnalysis() {
+            if (!collectedStockData) {
+                alert('Stock data not yet loaded. Please wait for the page to finish loading.');
+                return;
+            }
+
+            // Reset state for re-runs
+            mirofishAgentsCompleted.clear();
+            if (mirofishPollInterval) clearInterval(mirofishPollInterval);
+            mirofishJobId = null;
+
+            // UI: show button if hidden, hide results if visible
+            document.getElementById('mirofish-btn').style.display = 'none';
+            document.getElementById('mirofish-loading').style.display = 'block';
+            document.getElementById('mirofish-results').style.display = 'block';
+            document.getElementById('mirofish-verdict-card').style.display = 'none';
+            document.getElementById('mirofish-retry').style.display = 'none';
+            mfRenderAgents();
+            mfUpdateProgress(1, 6);
+
+            try {
+                // Step 1: POST already-collected data to start endpoint
+                const startResp = await fetch(`/api/mirofish-run/${symbol}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(collectedStockData)
+                });
+                const startData = await startResp.json();
+
+                if (startData.error) throw new Error(startData.error);
+
+                mirofishJobId = startData.job_id;
+
+                document.getElementById('mirofish-loading').style.display = 'none';
+                mfUpdateProgress(2, 6);
+
+                // Start polling every 2 seconds
+                mirofishPollInterval = setInterval(mfPollStatus, 2000);
+                mfPollStatus(); // immediate first poll
+
+            } catch (err) {
+                console.error('MiroFish start error:', err);
+                document.getElementById('mirofish-loading').innerHTML = '<p style="color:#fca5a5;">Error: ' + err.message + '</p>';
+            }
+        }
+
+        async function mfPollStatus() {
+            if (!mirofishJobId) return;
+            try {
+                const resp = await fetch(`/api/mirofish-status/${mirofishJobId}`);
+                const data = await resp.json();
+                if (data.error) { console.error('Poll error:', data.error); return; }
+
+                const perspectives = data.perspectives || {};
+                const agents = ['technical', 'fundamental', 'ml', 'risk', 'portfolio'];
+
+                let currentAgentIdx = -1;
+                for (let i = 0; i < agents.length; i++) {
+                    const agentName = mfAgentConfig[i].name;
+                    const agentData = perspectives[agentName];
+                    if (!agentData || !agentData.done) {
+                        currentAgentIdx = i;
+                        break;
+                    }
+                }
+
+                let completedCount = 0;
+                for (let i = 0; i < agents.length; i++) {
+                    const agentKey = agents[i];
+                    const agentName = mfAgentConfig[i].name;
+                    const agentData = perspectives[agentName];
+
+                    if (agentData && agentData.done && !mirofishAgentsCompleted.has(agentKey)) {
+                        mirofishAgentsCompleted.add(agentKey);
+                        let commentary = agentData.perspective || 'No commentary available.';
+                        if (commentary.startsWith('[ERROR:')) {
+                            commentary = '<span style="color: #dc2626;">' + commentary + '</span>';
+                        }
+                        mfSetAgentStatus(agentKey, 'done', commentary);
+                        completedCount = mirofishAgentsCompleted.size;
+                        mfUpdateProgress(2 + completedCount, 6);
+                    } else if (i === currentAgentIdx && data.status === 'running') {
+                        mfSetAgentStatus(agentKey, 'analyzing');
+                    }
+                }
+
+                if (data.report && data.status === 'complete') {
+                    clearInterval(mirofishPollInterval);
+                    mfUpdateProgress(6, 6);
+                    mfShowVerdict(data.report);
+                }
+            } catch (err) {
+                console.error('Poll error:', err);
+            }
+        }
+
+        function mfShowVerdict(report) {
+            const verdictCard = document.getElementById('mirofish-verdict-card');
+            const actionDiv = document.getElementById('mirofish-verdict-action');
+            const confDiv = document.getElementById('mirofish-verdict-confidence');
+            const detailsDiv = document.getElementById('mirofish-verdict-details');
+
+            verdictCard.style.display = 'block';
+
+            let action = 'HOLD';
+            let confidence = '50%';
+            let details = report || 'No detailed report available.';
+
+            const patterns = [
+                /ACTION:\s*(STRONG BUY|STRONG SELL|BUY|SELL|HOLD)/i,
+                /(?:VERDICT|DECISION):\s*(STRONG BUY|STRONG SELL|BUY|SELL|HOLD)/i,
+                /(?:ACTION|VERDICT|DECISION).*?(STRONG BUY|STRONG SELL|BUY|SELL|HOLD)/i,
+                /\b(STRONG BUY|STRONG SELL|BUY|SELL|HOLD)\b/i
+            ];
+            for (const p of patterns) {
+                const m = details.match(p);
+                if (m) { action = m[1].toUpperCase(); break; }
+            }
+
+            const confPatterns = [
+                /CONFIDENCE:\s*(\d+)%?/i,
+                /(\d+)%\s*confidence/i,
+                /confidence\s*(?:is|at|:)?\s*(\d+)%?/i
+            ];
+            for (const p of confPatterns) {
+                const m = details.match(p);
+                if (m) { confidence = m[1] + '%'; break; }
+            }
+
+            let actionClass = 'verdict-hold';
+            if (action.includes('BUY')) actionClass = 'verdict-buy';
+            else if (action.includes('SELL')) actionClass = 'verdict-sell';
+
+            actionDiv.className = `verdict-action ${actionClass}`;
+            actionDiv.textContent = action;
+            actionDiv.style.background = action.includes('BUY') ? 'linear-gradient(135deg, var(--success), #059669)' : action.includes('SELL') ? 'linear-gradient(135deg, var(--danger), #dc2626)' : 'linear-gradient(135deg, var(--warning), #d97706)';
+            actionDiv.style.color = 'white';
+
+            confDiv.textContent = `Confidence: ${confidence}`;
+
+            const lines = details.split('\n');
+            let html = '';
+            let inTable = false;
+            for (const line of lines) {
+                const trimmed = line.trim();
+                if (!trimmed) continue;
+                if (trimmed.startsWith('|') && trimmed.endsWith('|')) {
+                    if (!inTable) {
+                        html += '<table style="width:100%;margin:10px 0;border-collapse:collapse;font-size:0.9em;">';
+                        inTable = true;
+                    }
+                    const cells = trimmed.split('|').filter(c => c.trim());
+                    const isHeader = cells.some(c => c.includes('---'));
+                    if (!isHeader) {
+                        html += '<tr>' + cells.map(c => `<td style="border:1px solid rgba(255,255,255,0.2);padding:8px;">${c.trim()}</td>`).join('') + '</tr>';
+                    }
+                } else {
+                    if (inTable) { html += '</table>'; inTable = false; }
+                    html += `<p>${trimmed}</p>`;
+                }
+            }
+            if (inTable) html += '</table>';
+            detailsDiv.innerHTML = html || `<p>${details}</p>`;
+
+            setTimeout(() => {
+                verdictCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 500);
+
+            // Show retry button
+            document.getElementById('mirofish-retry').style.display = 'block';
+        }
+
+        // ================== END MIROFISH ==================
+
+        // Load on page load
+        loadStockDetail();
+    </script>
+
+    <!-- Bottom Navigation -->
+    <div class="bottom-nav">
+        <a href="/" title="Home - Top Stocks"><i class="fas fa-home"></i> Home</a>
+        <a href="/research" title="Research All Stocks"><i class="fas fa-search"></i> Research</a>
+        <a href="/backtest" title="Backtest Strategies"><i class="fas fa-flask"></i> Backtest</a>
+        <a href="/portfolio" title="Portfolio Tracking"><i class="fas fa-briefcase"></i> Portfolio</a>
+        <a href="/market-overview" title="Market Overview"><i class="fas fa-chart-pie"></i> Market</a>
+        <a href="javascript:history.back()" title="Go Back"><i class="fas fa-arrow-left"></i> Back</a>
+    </div>
+
+    <!-- MiroFish standalone page link in bottom nav -->
+    <script>
+        // Add MiroFish link to bottom nav if not present
+        (function(){
+            const nav = document.querySelector('.bottom-nav');
+            if (nav && !document.getElementById('nav-mirofish')) {
+                const a = document.createElement('a');
+                a.id = 'nav-mirofish';
+                a.href = '/mirofish/' + symbol;
+                a.title = 'MiroFish AI Analysis';
+                a.innerHTML = '<i class="fas fa-brain"></i> MiroFish';
+                nav.appendChild(a);
+            }
+        })();
+    </script>
+</body>
+</html>
