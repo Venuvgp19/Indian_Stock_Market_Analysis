@@ -1018,6 +1018,8 @@
             }
 
             if (status === 'analyzing') {
+                card.classList.remove('waiting');
+                card.classList.add('analyzing');
                 card.style.borderColor = 'var(--primary)';
                 card.style.border = '2px solid var(--primary)';
                 statusBadge.style.background = '#fef3c7';
@@ -1028,9 +1030,11 @@
                 commentaryDiv.style.color = 'var(--dark)';
                 commentaryDiv.style.fontStyle = 'normal';
                 commentaryDiv.textContent = 'Processing indicators and signals...';
-                // Force card visibility
                 card.style.display = 'block';
             } else if (status === 'done') {
+                card.classList.remove('waiting');
+                card.classList.remove('analyzing');
+                card.classList.add('done');
                 card.style.borderColor = 'var(--success)';
                 card.style.border = '2px solid var(--success)';
                 statusBadge.style.background = '#d1fae5';
@@ -1046,7 +1050,6 @@
                 }
                 commentaryDiv.innerHTML = html;
                 card.style.display = 'block';
-                // Only scroll on first transition to done
                 if (!card.dataset.scrolled) {
                     card.dataset.scrolled = 'true';
                     card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -1157,6 +1160,17 @@
                     clearInterval(mirofishPollInterval);
                     mfUpdateProgress(6, 6);
                     mfShowVerdict(data.report);
+                    // Force update any remaining agents that might have been missed
+                    for (let i = 0; i < agents.length; i++) {
+                        const agentKey = agents[i];
+                        const agentName = mfAgentConfig[i].name;
+                        const agentData = perspectives[agentName];
+                        if (agentData && agentData.done && mfAgentState[agentKey] !== 'done') {
+                            mfAgentState[agentKey] = 'done';
+                            let commentary = agentData.perspective || 'No commentary available.';
+                            mfSetAgentStatus(agentKey, 'done', commentary);
+                        }
+                    }
                 }
             } catch (err) {
                 console.error('Poll error:', err);
