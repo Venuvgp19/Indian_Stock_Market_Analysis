@@ -641,9 +641,28 @@ def get_advanced_indicators(symbol):
 
 @app.route('/api/portfolio/summary')
 def portfolio_summary():
-    """Get portfolio summary"""
+    """Get portfolio summary with LIVE prices"""
     try:
-        summary = portfolio_tracker.get_portfolio_summary()
+        # Fetch live prices for all holdings
+        holdings = portfolio_tracker.get_holdings()
+        current_prices = {}
+        
+        for symbol in holdings:
+            try:
+                info = data_fetcher.get_stock_info(symbol)
+                if info and info.get('current_price'):
+                    current_prices[symbol] = info['current_price']
+                else:
+                    # Fallback: fetch from historical data
+                    hist = data_fetcher.fetch_stock_data(symbol, '2d')
+                    if hist is not None and len(hist) > 0:
+                        current_prices[symbol] = float(hist['Close'].iloc[-1])
+            except Exception as e:
+                print(f"[Portfolio] Error fetching price for {symbol}: {e}")
+                # Use last known price from holdings
+                current_prices[symbol] = holdings[symbol].get('avg_buy_price', 0)
+        
+        summary = portfolio_tracker.get_portfolio_summary(current_prices)
         return jsonify(summary)
     except Exception as e:
         return jsonify({'error': str(e)}), 500

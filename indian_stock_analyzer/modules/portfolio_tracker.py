@@ -252,6 +252,11 @@ class PortfolioTracker:
         """Get watchlist"""
         return self.portfolio['watchlist']
     
+    def get_holdings(self):
+        """Get current holdings"""
+        return self.portfolio.get('holdings', {})
+
+    
     def clear_portfolio(self):
         """Clear all portfolio data"""
         self.portfolio = {'holdings': {}, 'transactions': [], 'watchlist': []}
