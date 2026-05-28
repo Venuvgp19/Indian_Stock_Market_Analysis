@@ -915,7 +915,7 @@ def run_mirofish_agent_sync(miro, agent, stock_data):
         response = miro.llm.chat([
             {"role": "system", "content": f"You are {agent['name']}, {agent['type']}"},
             {"role": "user", "content": prompt}
-        ], timeout=60)
+        ], timeout=100)
         print(f"  [Agent {agent['name']}] Response received (len={len(str(response))})")
         return {"perspective": response, "type": agent['type'], "done": True, "error": False}
     except Exception as e:

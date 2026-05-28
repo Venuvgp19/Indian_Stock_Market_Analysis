@@ -977,14 +977,34 @@
 
         function mfUpdateProgress(step, total) {
             const pct = (step / total) * 100;
-            document.getElementById('mirofish-progress-fill').style.width = pct + '%';
+            const bar = document.getElementById('mirofish-progress-fill');
+            if (bar) {
+                bar.style.width = pct + '%';
+            }
             for (let i = 1; i <= total; i++) {
                 const el = document.getElementById(`mf-step-${i}`);
                 if (!el) continue;
-                if (i < step) { el.style.color = 'var(--success)'; el.style.fontWeight = '600'; }
-                else if (i === step) { el.style.color = 'var(--primary)'; el.style.fontWeight = '600'; }
-                else { el.style.color = 'var(--gray)'; el.style.fontWeight = '500'; }
+                // Get base text without any markers
+                let baseText = el.getAttribute('data-base') || el.innerText.replace(/[✓●⏳]/g, '').trim();
+                if (!el.getAttribute('data-base')) el.setAttribute('data-base', baseText);
+                
+                if (i < step) { 
+                    el.style.color = 'var(--success)'; 
+                    el.style.fontWeight = '600'; 
+                    el.innerHTML = baseText + ' ✓';
+                }
+                else if (i === step) { 
+                    el.style.color = 'var(--primary)'; 
+                    el.style.fontWeight = '600'; 
+                    el.innerHTML = baseText + ' ●';
+                }
+                else { 
+                    el.style.color = 'var(--gray)'; 
+                    el.style.fontWeight = '500'; 
+                    el.innerHTML = baseText;
+                }
             }
+            console.log(`Progress bar: ${step}/${total} (${pct.toFixed(0)}%)`);
         }
 
         function mfSetAgentStatus(agentId, status, commentary) {
@@ -992,7 +1012,6 @@
             const statusBadge = document.getElementById(`mf-status-${agentId}`);
             const thinking = document.getElementById(`mf-thinking-${agentId}`);
             const commentaryDiv = document.getElementById(`mf-commentary-${agentId}`);
-            console.log(`mfSetAgentStatus called: ${agentId}, status=${status}, card=${!!card}, badge=${!!statusBadge}, thinking=${!!thinking}, commentary=${!!commentaryDiv}`);
             if (!card || !statusBadge || !thinking || !commentaryDiv) {
                 console.warn(`Missing element for agent ${agentId}, skipping update`);
                 return;
@@ -1000,6 +1019,7 @@
 
             if (status === 'analyzing') {
                 card.style.borderColor = 'var(--primary)';
+                card.style.border = '2px solid var(--primary)';
                 statusBadge.style.background = '#fef3c7';
                 statusBadge.style.color = '#92400e';
                 statusBadge.innerHTML = '<i class="fas fa-cog fa-spin"></i> Analyzing';
@@ -1008,8 +1028,11 @@
                 commentaryDiv.style.color = 'var(--dark)';
                 commentaryDiv.style.fontStyle = 'normal';
                 commentaryDiv.textContent = 'Processing indicators and signals...';
+                // Force card visibility
+                card.style.display = 'block';
             } else if (status === 'done') {
                 card.style.borderColor = 'var(--success)';
+                card.style.border = '2px solid var(--success)';
                 statusBadge.style.background = '#d1fae5';
                 statusBadge.style.color = '#065f46';
                 statusBadge.innerHTML = '<i class="fas fa-check"></i> Complete';
@@ -1022,8 +1045,14 @@
                     html = '<span style="color: #dc2626;">' + html + '</span>';
                 }
                 commentaryDiv.innerHTML = html;
-                card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                card.style.display = 'block';
+                // Only scroll on first transition to done
+                if (!card.dataset.scrolled) {
+                    card.dataset.scrolled = 'true';
+                    card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
             }
+            console.log(`Updated agent ${agentId} to ${status}`);
         }
 
         async function runMirofishAnalysis() {
@@ -1087,6 +1116,10 @@
                 // Log for debugging
                 console.log('Poll status:', data.status, 'completed:', data.completed_agents, 'perspectives keys:', Object.keys(perspectives));
 
+                // Determine which agent is currently running based on completed count
+                const completedCount = data.completed_agents || 0;
+                const currentRunningIdx = completedCount < agents.length ? completedCount : -1;
+
                 // Process ALL agents every poll — update any whose state changed
                 for (let i = 0; i < agents.length; i++) {
                     const agentKey = agents[i];
@@ -1095,7 +1128,7 @@
 
                     if (agentData && agentData.done) {
                         // Agent is DONE
-                        if (mfAgentState[agentKey] !== 'done' && !mirofishAgentsCompleted.has(agentKey)) {
+                        if (mfAgentState[agentKey] !== 'done') {
                             mirofishAgentsCompleted.add(agentKey);
                             mfAgentState[agentKey] = 'done';
                             let commentary = agentData.perspective || 'No commentary available.';
@@ -1105,19 +1138,20 @@
                             console.log(`Agent ${agentName} DONE, updating card`);
                             mfSetAgentStatus(agentKey, 'done', commentary);
                         }
-                    } else if (agentData && !agentData.done && data.status === 'running') {
-                        // Agent is currently RUNNING (has partial data but not done)
+                    } else if (i === currentRunningIdx && data.status === 'running') {
+                        // This is the CURRENT agent being processed by backend
                         if (mfAgentState[agentKey] !== 'analyzing') {
                             mfAgentState[agentKey] = 'analyzing';
-                            console.log(`Agent ${agentName} is RUNNING, updating card`);
+                            console.log(`Agent ${agentName} is RUNNING (backend idx=${currentRunningIdx}), updating card`);
                             mfSetAgentStatus(agentKey, 'analyzing');
                         }
                     }
                 }
 
-                // Update progress based on completed count
-                const completedCount = mirofishAgentsCompleted.size;
-                mfUpdateProgress(2 + completedCount, 6);
+                // Update progress bar: step 2 = started, each completed agent adds 1
+                const displayProgress = 2 + completedCount;
+                mfUpdateProgress(displayProgress, 6);
+                console.log(`Progress updated: ${displayProgress}/6 (completed: ${completedCount})`);
 
                 if (data.report && data.status === 'complete') {
                     clearInterval(mirofishPollInterval);
