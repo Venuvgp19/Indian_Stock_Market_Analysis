@@ -649,11 +649,18 @@ def portfolio_summary():
         
         for symbol in holdings:
             try:
+                # Try live price first (most accurate)
+                live_price = data_fetcher.get_live_price(symbol)
+                if live_price:
+                    current_prices[symbol] = live_price
+                    continue
+                
+                # Fallback: get_stock_info
                 info = data_fetcher.get_stock_info(symbol)
                 if info and info.get('current_price'):
                     current_prices[symbol] = info['current_price']
                 else:
-                    # Fallback: fetch from historical data
+                    # Last fallback: historical data
                     hist = data_fetcher.fetch_stock_data(symbol, '2d')
                     if hist is not None and len(hist) > 0:
                         current_prices[symbol] = float(hist['Close'].iloc[-1])

@@ -394,6 +394,43 @@ class StockDataFetcher:
             print(f"Error fetching info for {symbol}: {e}")
             return None
     
+    def get_live_price(self, symbol):
+        """Get real-time stock price using Yahoo Finance quote endpoint"""
+        try:
+            url = f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}"
+            params = {
+                'interval': '1m',
+                'range': '1d'
+            }
+            response = self.session.get(url, params=params, timeout=10)
+            data = response.json()
+            
+            if 'chart' in data and 'result' in data['chart'] and data['chart']['result']:
+                result = data['chart']['result'][0]
+                meta = result.get('meta', {})
+                
+                # Try to get the most current price
+                current_price = meta.get('regularMarketPrice', 0)
+                
+                # If meta price is 0, try last close from the chart data
+                if current_price == 0 and 'timestamp' in result and 'indicators' in result:
+                    timestamps = result['timestamp']
+                    closes = result['indicators']['quote'][0].get('close', [])
+                    if closes:
+                        # Get last non-null close
+                        for price in reversed(closes):
+                            if price is not None:
+                                current_price = price
+                                break
+                
+                return float(current_price) if current_price else None
+            return None
+            
+        except Exception as e:
+            print(f"[DataFetcher] Error fetching live price for {symbol}: {e}")
+            return None
+
+    
     def get_nifty50_list(self):
         """Return list of Nifty 50 stocks"""
         return self.nifty50
