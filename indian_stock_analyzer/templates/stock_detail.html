@@ -929,6 +929,35 @@
         // Track polling state per agent to prevent missed updates
         const mfAgentState = { technical: 'waiting', fundamental: 'waiting', ml: 'waiting', risk: 'waiting', portfolio: 'waiting' };
 
+        // Persist job state to localStorage so user can navigate away and return
+        function mfPersistState() {
+            const state = {
+                jobId: mirofishJobId,
+                symbol: symbol,
+                agentState: mfAgentState,
+                completed: Array.from(mirofishAgentsCompleted),
+                timestamp: Date.now()
+            };
+            localStorage.setItem('mirofish_job_' + symbol, JSON.stringify(state));
+        }
+
+        function mfClearPersistedState() {
+            localStorage.removeItem('mirofish_job_' + symbol);
+        }
+
+        function mfLoadPersistedState() {
+            const saved = localStorage.getItem('mirofish_job_' + symbol);
+            if (!saved) return null;
+            try {
+                const state = JSON.parse(saved);
+                // Only restore if less than 30 minutes old
+                if (state && state.jobId && (Date.now() - state.timestamp) < 30 * 60 * 1000) {
+                    return state;
+                }
+            } catch (e) {}
+            return null;
+        }
+
         function mfCreateAgentCard(config) {
             const avatarGradients = {
                 technical: '#3b82f6,#1d4ed8',
@@ -1068,6 +1097,7 @@
             mirofishAgentsCompleted.clear();
             if (mirofishPollInterval) clearInterval(mirofishPollInterval);
             mirofishJobId = null;
+            mfClearPersistedState();
             // Reset agent state tracking
             Object.keys(mfAgentState).forEach(k => mfAgentState[k] = 'waiting');
 
@@ -1092,6 +1122,7 @@
                 if (startData.error) throw new Error(startData.error);
 
                 mirofishJobId = startData.job_id;
+                mfPersistState(); // Save to localStorage
 
                 document.getElementById('mirofish-loading').style.display = 'none';
                 mfUpdateProgress(2, 6);
@@ -1116,25 +1147,15 @@
                 const perspectives = data.perspectives || {};
                 const agents = ['technical', 'fundamental', 'ml', 'risk', 'portfolio'];
 
-                // Log raw data for debugging
-                console.log('Poll raw:', JSON.stringify({status: data.status, completed: data.completed_agents, perspectiveKeys: Object.keys(perspectives)}));
-
                 // Check each agent directly by looking at perspectives data
                 for (let i = 0; i < agents.length; i++) {
                     const agentKey = agents[i];
                     const agentName = mfAgentConfig[i].name;
-                    // Backend uses underscores in keys (e.g. "Technical_Analyst")
-                    // Try both the display name and underscore version
                     const underscoreName = agentName.replace(/ /g, '_');
                     let agentData = perspectives[agentName] || perspectives[underscoreName];
 
-                    // DEBUG: log what we found for this agent
-                    console.log(`Checking agent ${agentName} (also tried ${underscoreName}):`, agentData ? {done: agentData.done, hasPerspective: !!agentData.perspective} : 'NOT IN PERSPECTIVES');
-
                     if (agentData) {
-                        // Agent data exists in perspectives
                         if (agentData.done) {
-                            // Agent is DONE
                             if (mfAgentState[agentKey] !== 'done') {
                                 mirofishAgentsCompleted.add(agentKey);
                                 mfAgentState[agentKey] = 'done';
@@ -1142,34 +1163,30 @@
                                 if (commentary.startsWith('[ERROR:')) {
                                     commentary = '<span style="color: #dc2626;">' + commentary + '</span>';
                                 }
-                                console.log(`⭐ Agent ${agentName} DONE, calling mfSetAgentStatus`);
                                 mfSetAgentStatus(agentKey, 'done', commentary);
                             }
                         } else {
-                            // Agent has data but not done - it's running
                             if (mfAgentState[agentKey] !== 'analyzing' && data.status === 'running') {
                                 mfAgentState[agentKey] = 'analyzing';
-                                console.log(`⭐ Agent ${agentName} RUNNING, calling mfSetAgentStatus`);
                                 mfSetAgentStatus(agentKey, 'analyzing');
                             }
                         }
                     } else {
-                        // No data yet for this agent - only mark as running if it's the current one
                         const completedCount = data.completed_agents || 0;
                         if (i === completedCount && data.status === 'running') {
                             if (mfAgentState[agentKey] !== 'analyzing') {
                                 mfAgentState[agentKey] = 'analyzing';
-                                console.log(`⭐ Agent ${agentName} CURRENT (idx=${i}), calling mfSetAgentStatus`);
                                 mfSetAgentStatus(agentKey, 'analyzing');
                             }
                         }
                     }
                 }
 
-                // Update progress bar: step 2 = started, each completed agent adds 1
+                // Persist after every poll
+                mfPersistState();
+
                 const displayProgress = 2 + (data.completed_agents || 0);
                 mfUpdateProgress(displayProgress, 6);
-                console.log(`Progress: ${displayProgress}/6, completed: ${data.completed_agents}`);
 
                 if (data.report && data.status === 'complete') {
                     clearInterval(mirofishPollInterval);
@@ -1187,6 +1204,8 @@
                             mfSetAgentStatus(agentKey, 'done', commentary);
                         }
                     }
+                    // Clear persisted state since job is done
+                    mfClearPersistedState();
                 }
             } catch (err) {
                 console.error('Poll error:', err);
@@ -1271,6 +1290,61 @@
 
         // ================== END MIROFISH ==================
 
+        // Auto-restore MiroFish job on page load if one exists
+        (function() {
+            const saved = mfLoadPersistedState();
+            if (saved && saved.jobId) {
+                console.log('[MiroFish] Found persisted job, auto-restoring:', saved.jobId);
+                // Restore job ID
+                mirofishJobId = saved.jobId;
+                // Restore agent states
+                if (saved.agentState) {
+                    Object.keys(mfAgentState).forEach(k => {
+                        if (saved.agentState[k]) mfAgentState[k] = saved.agentState[k];
+                    });
+                }
+                // Restore completed set
+                if (saved.completed) {
+                    saved.completed.forEach(c => mirofishAgentsCompleted.add(c));
+                }
+
+                // Show results section
+                document.getElementById('mirofish-btn').style.display = 'none';
+                document.getElementById('mirofish-loading').style.display = 'none';
+                document.getElementById('mirofish-results').style.display = 'block';
+
+                // Render agent cards
+                mfRenderAgents();
+
+                // Restore agent card visual states
+                mfAgentConfig.forEach(config => {
+                    const state = mfAgentState[config.id];
+                    if (state === 'analyzing') {
+                        mfSetAgentStatus(config.id, 'analyzing');
+                    } else if (state === 'done') {
+                        mfSetAgentStatus(config.id, 'done', 'Analysis complete. Commentary loading...');
+                    }
+                });
+
+                // Restore progress
+                const progress = 2 + mirofishAgentsCompleted.size;
+                mfUpdateProgress(progress, 6);
+
+                // Resume polling
+                mirofishPollInterval = setInterval(mfPollStatus, 2000);
+                mfPollStatus();
+
+                // Show restore notification
+                const banner = document.createElement('div');
+                banner.style.cssText = 'background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: white; padding: 12px 20px; border-radius: 12px; margin-bottom: 15px; text-align: center; font-weight: 500;';
+                banner.innerHTML = '<i class="fas fa-sync-alt fa-spin"></i> MiroFish analysis resumed! You can continue browsing. <a href="#" onclick="this.parentElement.remove(); return false;" style="color: rgba(255,255,255,0.8); margin-left: 10px; text-decoration: underline;">Dismiss</a>';
+                const resultsDiv = document.getElementById('mirofish-results');
+                if (resultsDiv && resultsDiv.firstChild) {
+                    resultsDiv.insertBefore(banner, resultsDiv.firstChild);
+                }
+            }
+        })();
+
         // Load on page load
         loadStockDetail();
     </script>
@@ -1298,6 +1372,54 @@
                 a.innerHTML = '<i class="fas fa-brain"></i> MiroFish';
                 nav.appendChild(a);
             }
+        })();
+
+        // Auto-restore MiroFish job if user navigated away and came back
+        (function mfAutoRestore() {
+            const saved = mfLoadPersistedState();
+            if (!saved || !saved.jobId) return;
+
+            console.log('[MiroFish] Found persisted job:', saved.jobId);
+
+            // Restore state
+            mirofishJobId = saved.jobId;
+            Object.assign(mfAgentState, saved.agentState || {});
+            mirofishAgentsCompleted = new Set(saved.completed || []);
+
+            // Show the analysis UI
+            document.getElementById('mirofish-btn').style.display = 'none';
+            document.getElementById('mirofish-loading').style.display = 'none';
+            document.getElementById('mirofish-results').style.display = 'block';
+            document.getElementById('mirofish-verdict-card').style.display = 'none';
+            document.getElementById('mirofish-retry').style.display = 'none';
+            mfRenderAgents();
+
+            // Restore agent cards to their last known state
+            for (const agentKey of ['technical', 'fundamental', 'ml', 'risk', 'portfolio']) {
+                const state = mfAgentState[agentKey];
+                if (state === 'analyzing') {
+                    mfSetAgentStatus(agentKey, 'analyzing');
+                } else if (state === 'done') {
+                    // For done agents, we'll get the commentary on next poll
+                    mfSetAgentStatus(agentKey, 'analyzing'); // temp until poll restores
+                }
+            }
+
+            // Restore progress bar
+            const progress = 2 + mirofishAgentsCompleted.size;
+            mfUpdateProgress(progress, 6);
+
+            // Resume polling immediately
+            mirofishPollInterval = setInterval(mfPollStatus, 2000);
+            mfPollStatus(); // immediate first poll
+
+            // Show a notification banner
+            const banner = document.createElement('div');
+            banner.id = 'mf-restore-banner';
+            banner.style.cssText = 'background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; padding: 12px 20px; border-radius: 12px; margin-bottom: 15px; text-align: center; font-weight: 500;';
+            banner.innerHTML = '<i class="fas fa-sync-alt fa-spin"></i> Resuming MiroFish analysis... You can continue browsing. <a href="#" onclick="document.getElementById(\'mf-restore-banner\').remove(); return false;" style="color: #bfdbfe; margin-left: 10px;">Dismiss</a>';
+            const resultsDiv = document.getElementById('mirofish-results');
+            if (resultsDiv) resultsDiv.insertBefore(banner, resultsDiv.firstChild);
         })();
     </script>
 </body>
