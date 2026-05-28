@@ -926,6 +926,9 @@
         let mirofishPollInterval = null;
         let mirofishAgentsCompleted = new Set();
 
+        // Track polling state per agent to prevent missed updates
+        const mfAgentState = { technical: 'waiting', fundamental: 'waiting', ml: 'waiting', risk: 'waiting', portfolio: 'waiting' };
+
         function mfCreateAgentCard(config) {
             const avatarGradients = {
                 technical: '#3b82f6,#1d4ed8',
@@ -989,7 +992,11 @@
             const statusBadge = document.getElementById(`mf-status-${agentId}`);
             const thinking = document.getElementById(`mf-thinking-${agentId}`);
             const commentaryDiv = document.getElementById(`mf-commentary-${agentId}`);
-            if (!card || !statusBadge || !thinking || !commentaryDiv) return;
+            console.log(`mfSetAgentStatus called: ${agentId}, status=${status}, card=${!!card}, badge=${!!statusBadge}, thinking=${!!thinking}, commentary=${!!commentaryDiv}`);
+            if (!card || !statusBadge || !thinking || !commentaryDiv) {
+                console.warn(`Missing element for agent ${agentId}, skipping update`);
+                return;
+            }
 
             if (status === 'analyzing') {
                 card.style.borderColor = 'var(--primary)';
@@ -1025,10 +1032,12 @@
                 return;
             }
 
-            // Reset state for re-runs
+            // Reset ALL state for re-runs
             mirofishAgentsCompleted.clear();
             if (mirofishPollInterval) clearInterval(mirofishPollInterval);
             mirofishJobId = null;
+            // Reset agent state tracking
+            Object.keys(mfAgentState).forEach(k => mfAgentState[k] = 'waiting');
 
             // UI: show button if hidden, hide results if visible
             document.getElementById('mirofish-btn').style.display = 'none';
@@ -1075,35 +1084,40 @@
                 const perspectives = data.perspectives || {};
                 const agents = ['technical', 'fundamental', 'ml', 'risk', 'portfolio'];
 
-                let currentAgentIdx = -1;
-                for (let i = 0; i < agents.length; i++) {
-                    const agentName = mfAgentConfig[i].name;
-                    const agentData = perspectives[agentName];
-                    if (!agentData || !agentData.done) {
-                        currentAgentIdx = i;
-                        break;
-                    }
-                }
+                // Log for debugging
+                console.log('Poll status:', data.status, 'completed:', data.completed_agents, 'perspectives keys:', Object.keys(perspectives));
 
-                let completedCount = 0;
+                // Process ALL agents every poll — update any whose state changed
                 for (let i = 0; i < agents.length; i++) {
                     const agentKey = agents[i];
                     const agentName = mfAgentConfig[i].name;
                     const agentData = perspectives[agentName];
 
-                    if (agentData && agentData.done && !mirofishAgentsCompleted.has(agentKey)) {
-                        mirofishAgentsCompleted.add(agentKey);
-                        let commentary = agentData.perspective || 'No commentary available.';
-                        if (commentary.startsWith('[ERROR:')) {
-                            commentary = '<span style="color: #dc2626;">' + commentary + '</span>';
+                    if (agentData && agentData.done) {
+                        // Agent is DONE
+                        if (mfAgentState[agentKey] !== 'done' && !mirofishAgentsCompleted.has(agentKey)) {
+                            mirofishAgentsCompleted.add(agentKey);
+                            mfAgentState[agentKey] = 'done';
+                            let commentary = agentData.perspective || 'No commentary available.';
+                            if (commentary.startsWith('[ERROR:')) {
+                                commentary = '<span style="color: #dc2626;">' + commentary + '</span>';
+                            }
+                            console.log(`Agent ${agentName} DONE, updating card`);
+                            mfSetAgentStatus(agentKey, 'done', commentary);
                         }
-                        mfSetAgentStatus(agentKey, 'done', commentary);
-                        completedCount = mirofishAgentsCompleted.size;
-                        mfUpdateProgress(2 + completedCount, 6);
-                    } else if (i === currentAgentIdx && data.status === 'running') {
-                        mfSetAgentStatus(agentKey, 'analyzing');
+                    } else if (agentData && !agentData.done && data.status === 'running') {
+                        // Agent is currently RUNNING (has partial data but not done)
+                        if (mfAgentState[agentKey] !== 'analyzing') {
+                            mfAgentState[agentKey] = 'analyzing';
+                            console.log(`Agent ${agentName} is RUNNING, updating card`);
+                            mfSetAgentStatus(agentKey, 'analyzing');
+                        }
                     }
                 }
+
+                // Update progress based on completed count
+                const completedCount = mirofishAgentsCompleted.size;
+                mfUpdateProgress(2 + completedCount, 6);
 
                 if (data.report && data.status === 'complete') {
                     clearInterval(mirofishPollInterval);
