@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Market Overview - Indian Stock Market Analyzer</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #667eea;
+            --primary-dark: #764ba2;
+            --secondary: #f093fb;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --dark: #1e293b;
+            --light: #f8fafc;
+            --gray: #64748b;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+        .header {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            text-align: center;
+            color: white;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        }
+        .header h1 { font-size: 2.2em; margin-bottom: 10px; font-weight: 700; }
+        .header p { opacity: 0.9; font-size: 1.1em; }
+        .nav-bar {
+            display: flex; justify-content: center; gap: 10px;
+            margin-bottom: 30px; flex-wrap: wrap;
+        }
+        .nav-bar a {
+            color: white; text-decoration: none; padding: 12px 24px;
+            background: rgba(255,255,255,0.15); border-radius: 30px;
+            transition: all 0.3s ease; display: flex; align-items: center;
+            gap: 8px; font-weight: 500; border: 1px solid rgba(255,255,255,0.2);
+        }
+        .nav-bar a:hover { background: white; color: var(--primary-dark); transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
+        .nav-bar a.active { background: white; color: var(--primary-dark); font-weight: 600; }
+        .card {
+            background: white; border-radius: 20px; padding: 30px;
+            margin-bottom: 25px; box-shadow: 0 10px 40px rgba(0,0,0,0.1); transition: transform 0.3s;
+        }
+        .card:hover { transform: translateY(-5px); }
+        .card h2, .card h3 { color: var(--dark); margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+        .card h2 i, .card h3 i { color: var(--primary); }
+        .summary-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 30px;
+        }
+        .summary-card {
+            background: white; padding: 25px; border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08); text-align: center; transition: all 0.3s;
+        }
+        .summary-card:hover { transform: translateY(-5px); box-shadow: 0 8px 25px rgba(0,0,0,0.15); }
+        .summary-card .icon { font-size: 2.5em; margin-bottom: 10px; }
+        .summary-card .label { color: var(--gray); font-size: 0.9em; margin-bottom: 5px; }
+        .summary-card .value { font-size: 1.8em; font-weight: bold; color: var(--dark); }
+        .summary-card.green .icon { color: var(--success); }
+        .summary-card.green .value { color: var(--success); }
+        .summary-card.red .icon { color: var(--danger); }
+        .summary-card.red .value { color: var(--danger); }
+        .summary-card.blue .icon { color: var(--primary); }
+        .summary-card.blue .value { color: var(--primary); }
+        .summary-card.purple .icon { color: var(--primary-dark); }
+        .summary-card.purple .value { color: var(--primary-dark); }
+        .loading { text-align: center; padding: 40px; font-size: 1.2em; color: var(--gray); }
+        .spinner {
+            border: 4px solid #f3f3f3; border-top: 4px solid var(--primary);
+            border-radius: 50%; width: 40px; height: 40px;
+            animation: spin 1s linear infinite; margin: 0 auto 15px;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .error { background: #fee2e2; color: #991b1b; padding: 15px; border-radius: 10px; margin-bottom: 20px; }
+        .market-status { display: inline-block; padding: 6px 14px; border-radius: 20px; font-size: 0.85em; font-weight: 600; }
+        .market-open { background: #d1fae5; color: #065f46; }
+        .market-closed { background: #fee2e2; color: #991b1b; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #e2e8f0; }
+        th { background: #f8fafc; font-weight: 600; color: var(--gray); font-size: 0.9em; text-transform: uppercase; }
+        .badge { padding: 4px 12px; border-radius: 20px; font-size: 0.85em; font-weight: 500; }
+        .badge-green { background: #d1fae5; color: #065f46; }
+        .badge-red { background: #fee2e2; color: #991b1b; }
+        .bottom-nav {
+            position: fixed; bottom: 0; left: 0; right: 0;
+            background: rgba(255,255,255,0.95); backdrop-filter: blur(10px);
+            padding: 12px 20px; display: flex; justify-content: center; gap: 8px;
+            flex-wrap: wrap; box-shadow: 0 -4px 20px rgba(0,0,0,0.1); z-index: 1000;
+        }
+        .bottom-nav a { color: var(--primary-dark); text-decoration: none; padding: 8px 16px; background: #f1f5f9; border-radius: 20px; transition: all 0.3s; font-size: 0.85em; font-weight: 500; border: 1px solid #e2e8f0; }
+        .bottom-nav a:hover { background: var(--primary); color: white; }
+        .bottom-nav a.active { background: var(--primary); color: white; }
+        body { padding-bottom: 80px; }
+        @media (max-width: 768px) {
+            .header h1 { font-size: 1.5em; }
+            .nav-bar a { padding: 10px 15px; font-size: 0.9em; }
+            .summary-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-globe"></i> Market Overview</h1>
+            <p>Indian Stock Market Indices & Sentiment</p>
+            <div id="market-status" style="margin-top: 10px;"></div>
+        </div>
+
+        <div class="nav-bar">
+            <a href="/"><i class="fas fa-home"></i> Home</a>
+            <a href="/research"><i class="fas fa-search"></i> Research</a>
+            <a href="/backtest"><i class="fas fa-chart-bar"></i> Backtest</a>
+            <a href="/portfolio"><i class="fas fa-chart-pie"></i> Portfolio</a>
+            <a href="/market-overview" class="active"><i class="fas fa-globe"></i> Market</a>
+        </div>
+
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+            <p>Loading market data...</p>
+        </div>
+
+        <div id="content" style="display: none;">
+            <!-- Indices Cards -->
+            <div class="summary-grid" id="market-overview"></div>
+
+            <!-- Market Summary -->
+            <div class="card">
+                <h2><i class="fas fa-info-circle"></i> Market Summary</h2>
+                <div id="market-summary"></div>
+            </div>
+        </div>
+
+        <div id="error" class="error" style="display: none;"></div>
+    </div>
+
+    <script>
+        function isMarketOpen() {
+            const now = new Date();
+            const day = now.getDay();
+            const hour = now.getHours();
+            const minute = now.getMinutes();
+            const time = hour + minute / 60;
+            // NSE/BSE hours: 9:15 AM - 3:30 PM IST (approximate CST conversion)
+            // Simplified: check if weekday and roughly business hours
+            return day >= 1 && day <= 5 && time >= 9.25 && time <= 15.5;
+        }
+
+        async function fetchMarketOverview() {
+            try {
+                const response = await fetch('/api/market-overview');
+                const data = await response.json();
+
+                if (data.error) throw new Error(data.error);
+
+                const overview = document.getElementById('market-overview');
+                const indices = [
+                    { key: 'NIFTY_50', label: 'NIFTY 50', icon: '📈', color: 'blue' },
+                    { key: 'SENSEX', label: 'SENSEX', icon: '📊', color: 'purple' },
+                    { key: 'NIFTY_BANK', label: 'NIFTY BANK', icon: '🏦', color: 'green' },
+                    { key: 'NIFTY_IT', label: 'NIFTY IT', icon: '💻', color: '' }
+                ];
+
+                let html = '';
+                let advancers = 0, decliners = 0;
+
+                indices.forEach(idx => {
+                    const d = data[idx.key];
+                    if (!d) return;
+                    const isUp = d.change >= 0;
+                    if (isUp) advancers++; else decliners++;
+                    const colorClass = isUp ? 'green' : 'red';
+
+                    html += `
+                        <div class="summary-card ${colorClass}">
+                            <div class="icon">${idx.icon}</div>
+                            <div class="label">${idx.label}</div>
+                            <div class="value">${d.value?.toFixed(2) || 'N/A'}</div>
+                            <div style="font-size: 0.9em; margin-top: 5px;">
+                                <span style="color: ${isUp ? 'var(--success)' : 'var(--danger)'}; font-weight: 600;">
+                                    ${isUp ? '+' : ''}${d.change?.toFixed(2) || 0}%
+                                </span>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                overview.innerHTML = html;
+
+                // Market sentiment
+                const sentiment = advancers >= decliners ? 'Bullish' : 'Bearish';
+                const sentimentColor = advancers >= decliners ? 'var(--success)' : 'var(--danger)';
+
+                document.getElementById('market-summary').innerHTML = `
+                    <p style="font-size: 1.1em; margin-bottom: 10px;">
+                        <strong>Market Sentiment:</strong>
+                        <span style="color: ${sentimentColor}; font-weight: 600;">${sentiment}</span>
+                    </p>
+                    <p style="color: var(--gray);">
+                        ${advancers} index${advancers !== 1 ? 'es' : ''} up, ${decliners} down
+                    </p>
+                `;
+
+                // Market status badge
+                const open = isMarketOpen();
+                document.getElementById('market-status').innerHTML =
+                    `<span class="market-status ${open ? 'market-open' : 'market-closed'}">
+                        <i class="fas fa-${open ? 'door-open' : 'door-closed'}"></i>
+                        Market ${open ? 'Open' : 'Closed'}
+                    </span>`;
+
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('content').style.display = 'block';
+            } catch (error) {
+                console.error('Error fetching market overview:', error);
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('error').style.display = 'block';
+                document.getElementById('error').textContent = 'Error loading market data: ' + error.message;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', fetchMarketOverview);
+    </script>
+
+    <div class="bottom-nav">
+        <a href="/"><i class="fas fa-home"></i> Home</a>
+        <a href="/research"><i class="fas fa-search"></i> Research</a>
+        <a href="/backtest"><i class="fas fa-flask"></i> Backtest</a>
+        <a href="/portfolio"><i class="fas fa-briefcase"></i> Portfolio</a>
+        <a href="/market-overview" class="active"><i class="fas fa-chart-pie"></i> Market</a>
+    </div>
+</body>
+</html>

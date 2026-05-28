@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portfolio - Indian Stock Analyzer</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f7fa;
+            color: #333;
+            padding: 20px;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        .nav {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .nav a {
+            padding: 10px 20px;
+            background: white;
+            border-radius: 5px;
+            text-decoration: none;
+            color: #667eea;
+            font-weight: 600;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .nav a:hover {
+            background: #667eea;
+            color: white;
+        }
+        
+        .bottom-nav { 
+            position: fixed; 
+            bottom: 0; 
+            left: 0; 
+            right: 0; 
+            background: rgba(255,255,255,0.95); 
+            backdrop-filter: blur(10px); 
+            padding: 12px 20px; 
+            display: flex; 
+            justify-content: center; 
+            gap: 8px; 
+            flex-wrap: wrap; 
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.1); 
+            z-index: 1000; 
+        }
+        .bottom-nav a { 
+            color: #667eea; 
+            text-decoration: none; 
+            padding: 8px 16px; 
+            background: #f1f5f9; 
+            border-radius: 20px; 
+            transition: all 0.3s; 
+            font-size: 0.85em; 
+            font-weight: 500; 
+            border: 1px solid #e2e8f0; 
+        }
+        .bottom-nav a:hover { background: #667eea; color: white; }
+        .bottom-nav a.active { background: #667eea; color: white; }
+        body { padding-bottom: 80px; }
+        .summary-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .card h3 {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+        .card .value {
+            font-size: 28px;
+            font-weight: bold;
+            color: #333;
+        }
+        .positive { color: #28a745 !important; }
+        .negative { color: #dc3545 !important; }
+        .holdings-table {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .holdings-table h2 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+        th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #666;
+        }
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .btn-add {
+            background: #28a745;
+            color: white;
+        }
+        .btn-remove {
+            background: #dc3545;
+            color: white;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+        }
+        .modal-content {
+            background: white;
+            margin: 10% auto;
+            padding: 20px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 500px;
+        }
+        .close {
+            float: right;
+            font-size: 28px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Portfolio Tracker</h1>
+        <p>Track your stock investments and P&L</p>
+    </div>
+    
+    <div class="nav">
+        <a href="/">Dashboard</a>
+        <a href="/research">Research</a>
+        <a href="/backtest">Backtest</a>
+    </div>
+    
+    <div class="summary-cards" id="summaryCards">
+        <div class="card">
+            <h3>Total Invested</h3>
+            <div class="value" id="totalInvested">Loading...</div>
+        </div>
+        <div class="card">
+            <h3>Current Value</h3>
+            <div class="value" id="currentValue">Loading...</div>
+        </div>
+        <div class="card">
+            <h3>Total P&L</h3>
+            <div class="value" id="totalPnL">Loading...</div>
+        </div>
+        <div class="card">
+            <h3>P&L %</h3>
+            <div class="value" id="totalPnLPct">Loading...</div>
+        </div>
+    </div>
+    
+    <div class="holdings-table">
+        <h2>Your Holdings</h2>
+        <button class="btn btn-add" onclick="openAddModal()">+ Add Stock</button>
+        <table id="holdingsTable">
+            <thead>
+                <tr>
+                    <th>Symbol</th>
+                    <th>Shares</th>
+                    <th>Avg Buy Price</th>
+                    <th>Current Price</th>
+                    <th>Invested</th>
+                    <th>Current Value</th>
+                    <th>P&L</th>
+                    <th>P&L %</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="holdingsBody">
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- Add Stock Modal -->
+    <div id="addModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeAddModal()">&times;</span>
+            <h2>Add Stock to Portfolio</h2>
+            <div class="form-group">
+                <label>Symbol (e.g., RELIANCE.NS)</label>
+                <input type="text" id="addSymbol" placeholder="Enter symbol">
+            </div>
+            <div class="form-group">
+                <label>Shares</label>
+                <input type="number" id="addShares" placeholder="Enter shares">
+            </div>
+            <div class="form-group">
+                <label>Buy Price (Rs.)</label>
+                <input type="number" id="addPrice" placeholder="Enter buy price">
+            </div>
+            <button class="btn btn-add" onclick="addStock()">Add Stock</button>
+        </div>
+    </div>
+    
+    <script>
+        // Load portfolio summary
+        async function loadPortfolio() {
+            try {
+                const response = await fetch('/api/portfolio/summary');
+                const data = await response.json();
+                
+                if (data.error) {
+                    console.error('Error:', data.error);
+                    return;
+                }
+                
+                document.getElementById('totalInvested').textContent = 'Rs. ' + (data.total_invested || 0).toLocaleString();
+                document.getElementById('currentValue').textContent = 'Rs. ' + (data.current_value || 0).toLocaleString();
+                
+                const pnlEl = document.getElementById('totalPnL');
+                pnlEl.textContent = 'Rs. ' + (data.total_pnl || 0).toLocaleString();
+                pnlEl.className = 'value ' + (data.total_pnl >= 0 ? 'positive' : 'negative');
+                
+                const pnlPctEl = document.getElementById('totalPnLPct');
+                pnlPctEl.textContent = (data.total_pnl_percent || 0).toFixed(2) + '%';
+                pnlPctEl.className = 'value ' + (data.total_pnl_percent >= 0 ? 'positive' : 'negative');
+                
+                // Populate holdings table
+                const tbody = document.getElementById('holdingsBody');
+                tbody.innerHTML = '';
+                
+                if (data.holdings && data.holdings.length > 0) {
+                    data.holdings.forEach(holding => {
+                        const row = tbody.insertRow();
+                        row.innerHTML = `
+                            <td>${holding.symbol}</td>
+                            <td>${holding.shares}</td>
+                            <td>Rs. ${holding.avg_buy_price}</td>
+                            <td>Rs. ${holding.current_price}</td>
+                            <td>Rs. ${holding.invested.toLocaleString()}</td>
+                            <td>Rs. ${holding.current_value.toLocaleString()}</td>
+                            <td class="${holding.pnl >= 0 ? 'positive' : 'negative'}">Rs. ${holding.pnl.toLocaleString()}</td>
+                            <td class="${holding.pnl_percent >= 0 ? 'positive' : 'negative'}">${holding.pnl_percent}%</td>
+                            <td>
+                                <button class="btn btn-remove" onclick="removeStock('${holding.symbol}', ${holding.shares}, ${holding.current_price})">Sell</button>
+                            </td>
+                        `;
+                    });
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;">No holdings found. Add stocks to get started!</td></tr>';
+                }
+                
+            } catch (error) {
+                console.error('Error loading portfolio:', error);
+            }
+        }
+        
+        // Modal functions
+        function openAddModal() {
+            document.getElementById('addModal').style.display = 'block';
+        }
+        
+        function closeAddModal() {
+            document.getElementById('addModal').style.display = 'none';
+        }
+        
+        // Add stock
+        async function addStock() {
+            const symbol = document.getElementById('addSymbol').value;
+            const shares = parseInt(document.getElementById('addShares').value);
+            const price = parseFloat(document.getElementById('addPrice').value);
+            
+            if (!symbol || !shares || !price) {
+                alert('Please fill all fields');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/portfolio/add', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ symbol, shares, buy_price: price })
+                });
+                
+                const result = await response.json();
+                if (result.status === 'success') {
+                    alert(result.message);
+                    closeAddModal();
+                    loadPortfolio();
+                } else {
+                    alert('Error: ' + result.message);
+                }
+            } catch (error) {
+                console.error('Error adding stock:', error);
+            }
+        }
+        
+        // Remove stock
+        async function removeStock(symbol, shares, currentPrice) {
+            if (!confirm(`Sell ${shares} shares of ${symbol} at Rs. ${currentPrice}?`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/portfolio/remove', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ symbol, shares, sell_price: currentPrice })
+                });
+                
+                const result = await response.json();
+                if (result.status === 'success') {
+                    alert(result.message);
+                    loadPortfolio();
+                } else {
+                    alert('Error: ' + result.message);
+                }
+            } catch (error) {
+                console.error('Error removing stock:', error);
+            }
+        }
+        
+        // Load on page load
+        loadPortfolio();
+        
+        // Refresh every 30 seconds
+        setInterval(loadPortfolio, 30000);
+    </script>
+    
+    <!-- Bottom Navigation -->
+    <div class="bottom-nav">
+        <a href="/" title="Home - Top Stocks"><i class="fas fa-home"></i> Home</a>
+        <a href="/research" title="Research All Stocks"><i class="fas fa-search"></i> Research</a>
+        <a href="/backtest" title="Backtest Strategies"><i class="fas fa-flask"></i> Backtest</a>
+        <a href="/portfolio" class="active" title="Portfolio Tracking"><i class="fas fa-briefcase"></i> Portfolio</a>
+        <a href="/market-overview" title="Market Overview"><i class="fas fa-chart-pie"></i> Market</a>
+    </div>
+</body>
+</html>

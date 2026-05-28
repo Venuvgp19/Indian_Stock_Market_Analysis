@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Backtesting - Indian Stock Analyzer</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f7fa;
+            color: #333;
+            padding: 20px;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        .nav {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .nav a {
+            padding: 10px 20px;
+            background: white;
+            border-radius: 5px;
+            text-decoration: none;
+            color: #667eea;
+            font-weight: 600;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .nav a:hover {
+            background: #667eea;
+            color: white;
+        }
+        
+        .bottom-nav { 
+            position: fixed; 
+            bottom: 0; 
+            left: 0; 
+            right: 0; 
+            background: rgba(255,255,255,0.95); 
+            backdrop-filter: blur(10px); 
+            padding: 12px 20px; 
+            display: flex; 
+            justify-content: center; 
+            gap: 8px; 
+            flex-wrap: wrap; 
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.1); 
+            z-index: 1000; 
+        }
+        .bottom-nav a { 
+            color: #667eea; 
+            text-decoration: none; 
+            padding: 8px 16px; 
+            background: #f1f5f9; 
+            border-radius: 20px; 
+            transition: all 0.3s; 
+            font-size: 0.85em; 
+            font-weight: 500; 
+            border: 1px solid #e2e8f0; 
+        }
+        .bottom-nav a:hover { background: #667eea; color: white; }
+        .bottom-nav a.active { background: #667eea; color: white; }
+        body { padding-bottom: 80px; }
+        .controls {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .form-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        .form-group {
+            flex: 1;
+            min-width: 200px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 16px;
+        }
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #5568d3;
+        }
+        .results {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .result-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .result-card h3 {
+            margin-bottom: 15px;
+            color: #667eea;
+        }
+        .metric {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .metric:last-child {
+            border-bottom: none;
+        }
+        .metric-label {
+            color: #666;
+        }
+        .metric-value {
+            font-weight: 600;
+        }
+        .positive { color: #28a745; }
+        .negative { color: #dc3545; }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        .comparison-table {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-top: 20px;
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+        th {
+            background: #f8f9fa;
+            font-weight: 600;
+        }
+        .winner {
+            background: #d4edda;
+        }
+
+        /* Strategy Guide Styles */
+        .strategy-guide {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .strategy-guide h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+        .strategy-card {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-left: 4px solid #667eea;
+        }
+        .strategy-card h3 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .strategy-card .best-for {
+            color: #28a745;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+        .strategy-card .risk-level {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+        .risk-low { background: #d4edda; color: #155724; }
+        .risk-medium { background: #fff3cd; color: #856404; }
+        .risk-high { background: #f8d7da; color: #721c24; }
+
+        .metrics-guide {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        .metrics-guide h3 {
+            color: #333;
+            margin-bottom: 15px;
+        }
+        .metric-explanation {
+            margin-bottom: 15px;
+            padding: 10px;
+            background: white;
+            border-radius: 5px;
+        }
+        .metric-explanation strong {
+            color: #667eea;
+        }
+        .example-box {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        .example-box h4 {
+            color: #1976d2;
+            margin-bottom: 10px;
+        }
+        .comparison-table h3 {
+            color: #667eea;
+            margin-bottom: 20px;
+        }
+        .recommendation {
+            background: #667eea;
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        .recommendation h3 {
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Strategy Backtesting</h1>
+        <p>Test trading strategies on historical data before risking real money</p>
+    </div>
+    
+    <div class="nav">
+        <a href="/"><i class="fas fa-home"></i> Dashboard</a>
+        <a href="/research"><i class="fas fa-search"></i> Research</a>
+        <a href="/portfolio"><i class="fas fa-chart-pie"></i> Portfolio</a>
+    </div>
+
+    <!-- Strategy Guide Section -->
+    <div class="strategy-guide">
+        <h2>📚 Trading Strategies Explained</h2>
+        
+        <div class="strategy-card">
+            <h3>1. SMA Crossover Strategy</h3>
+            <p><strong>How it works:</strong> Uses two Simple Moving Averages (SMA) - a short-term (20-day) and long-term (50-day).</p>
+            <div class="example-box">
+                <h4>Example - RELIANCE.NS:</h4>
+                <ul>
+                    <li>20-day SMA = Rs. 2,400 (short-term trend)</li>
+                    <li>50-day SMA = Rs. 2,350 (long-term trend)</li>
+                    <li><strong>SIGNAL: BUY</strong> - 20-day crosses above 50-day (Golden Cross)</li>
+                    <li>Later: 20-day drops below 50-day → <strong>SELL</strong> (Death Cross)</li>
+                </ul>
+            </div>
+            <p class="best-for">✅ Best for: Trending markets (strong up or down moves)</p>
+            <span class="risk-level risk-medium">Medium Risk</span>
+        </div>
+
+        <div class="strategy-card">
+            <h3>2. RSI Strategy</h3>
+            <p><strong>How it works:</strong> RSI (Relative Strength Index) ranges from 0-100. Buy when oversold, sell when overbought.</p>
+            <div class="example-box">
+                <h4>Example:</h4>
+                <ul>
+                    <li>RSI drops to 28 → <strong>BUY</strong> (oversold, expect bounce back)</li>
+                    <li>RSI rises to 72 → <strong>SELL</strong> (overbought, expect pullback)</li>
+                    <li>RSI between 30-70 → <strong>HOLD</strong> (neutral zone)</li>
+                </ul>
+            </div>
+            <p class="best-for">✅ Best for: Range-bound markets (moving sideways)</p>
+            <span class="risk-level risk-medium">Medium Risk</span>
+        </div>
+
+        <div class="strategy-card">
+            <h3>3. MACD Strategy</h3>
+            <p><strong>How it works:</strong> MACD (Moving Average Convergence Divergence) shows momentum shifts.</p>
+            <div class="example-box">
+                <h4>Example:</h4>
+                <ul>
+                    <li>MACD line = 12, Signal line = 10 → <strong>BUY</strong> (bullish crossover)</li>
+                    <li>MACD line = 8, Signal line = 11 → <strong>SELL</strong> (bearish crossover)</li>
+                    <li>Histogram turning positive = Increasing momentum</li>
+                </ul>
+            </div>
+            <p class="best-for">✅ Best for: Capturing momentum shifts early</p>
+            <span class="risk-level risk-medium">Medium Risk</span>
+        </div>
+
+        <div class="strategy-card">
+            <h3>4. Bollinger Bands Strategy</h3>
+            <p><strong>How it works:</strong> Uses upper and lower bands around a moving average. Buy at lower band, sell at upper band.</p>
+            <div class="example-box">
+                <h4>Example:</h4>
+                <ul>
+                    <li>Price hits Lower Band (Rs. 2,300) → <strong>BUY</strong> (oversold, expect mean reversion)</li>
+                    <li>Price hits Upper Band (Rs. 2,600) → <strong>SELL</strong> (overbought)</li>
+                    <li>Price in middle → <strong>HOLD</strong> (no clear signal)</li>
+                </ul>
+            </div>
+            <p class="best-for">✅ Best for: Mean reversion trading (buying dips, selling peaks)</p>
+            <span class="risk-level risk-low">Low-Medium Risk</span>
+        </div>
+
+        <div class="strategy-card" style="border-left-color: #28a745;">
+            <h3>5. Combined Strategy ⭐ (RECOMMENDED)</h3>
+            <p><strong>How it works:</strong> Uses ALL indicators together. Only trades when most indicators agree (3 out of 4).</p>
+            <div class="example-box">
+                <h4>Example:</h4>
+                <ul>
+                    <li>SMA: Bullish ✓</li>
+                    <li>RSI: 45 (Neutral) ✓</li>
+                    <li>MACD: Bullish ✓</li>
+                    <li>Bollinger: Middle zone ✓</li>
+                    <li><strong>Result: BUY</strong> (3/4 indicators bullish)</li>
+                </ul>
+            </div>
+            <p class="best-for">✅ Best for: Reducing false signals and avoiding whipsaws</p>
+            <span class="risk-level risk-low">Low Risk</span>
+            <p style="margin-top: 10px; color: #856404;"><strong>Note:</strong> Requires at least 3 indicators to agree before trading. Less frequent but more reliable signals.</p>
+        </div>
+
+        <div class="strategy-card">
+            <h3>6. ADX Trend Strength Strategy</h3>
+            <p><strong>How it works:</strong> Uses Average Directional Index (ADX) to measure trend strength. Only trades when trend is strong enough.</p>
+            <div class="example-box">
+                <h4>Example:</h4>
+                <ul>
+                    <li>ADX = 32 (above 25 threshold) +DI (14) crosses above -DI (10) → <strong>BUY</strong> (strong bullish trend)</li>
+                    <li>ADX = 18 (weak trend) → <strong>HOLD</strong> (no trade, trend too weak)</li>
+                    <li>ADX = 30, -DI crosses above +DI → <strong>SELL</strong> (strong bearish trend)</li>
+                </ul>
+            </div>
+            <p class="best-for">✅ Best for: Avoiding trades during weak/ranging markets</p>
+            <span class="risk-level risk-medium">Medium Risk</span>
+        </div>
+
+        <div class="strategy-card">
+            <h3>7. SuperTrend Strategy</h3>
+            <p><strong>How it works:</strong> Uses ATR-based trend indicator. Green line below price = buy, red line above price = sell.</p>
+            <div class="example-box">
+                <h4>Example:</h4>
+                <ul>
+                    <li>Price (Rs. 2,500) above SuperTrend (Rs. 2,450) → <strong>BUY</strong> (uptrend confirmed)</li>
+                    <li>Price breaks below SuperTrend → <strong>SELL</strong> (downtrend starts)</li>
+                    <li>Works as dynamic trailing stop-loss</li>
+                </ul>
+            </div>
+            <p class="best-for">✅ Best for: Trend-following with automatic stop-loss</p>
+            <span class="risk-level risk-medium">Medium Risk</span>
+        </div>
+
+        <div class="strategy-card">
+            <h3>8. Ichimoku Cloud Strategy</h3>
+            <p><strong>How it works:</strong> Complex Japanese indicator. Price above cloud + Tenkan > Kijun = buy. Price below cloud = sell.</p>
+            <div class="example-box">
+                <h4>Example:</h4>
+                <ul>
+                    <li>Price above Senkou Span A & B (Cloud) + Tenkan (9-day) > Kijun (26-day) → <strong>BUY</strong></li>
+                    <li>Price inside Cloud → <strong>HOLD</strong> (neutral zone)</li>
+                    <li>Price below Cloud + Tenkan < Kijun → <strong>SELL</strong></li>
+                </ul>
+            </div>
+            <p class="best-for">✅ Best for: Mid-to-long term trend identification</p>
+            <span class="risk-level risk-medium">Medium Risk</span>
+        </div>
+
+        <div class="strategy-card">
+            <h3>9. Breakout Strategy</h3>
+            <p><strong>How it works:</strong> Buys when price breaks above recent highs, sells when breaks below recent lows.</p>
+            <div class="example-box">
+                <h4>Example:</h4>
+                <ul>
+                    <li>20-day high = Rs. 2,500, Price breaks above → <strong>BUY</strong> (momentum breakout)</li>
+                    <li>Price keeps making higher highs → <strong>HOLD</strong></li>
+                    <li>Price drops below 20-day low (Rs. 2,300) → <strong>SELL</strong> (breakdown)</li>
+                </ul>
+            </div>
+            <p class="best-for">✅ Best for: Catching strong momentum moves early</p>
+            <span class="risk-level risk-high">High Risk</span>
+            <p style="margin-top: 10px; color: #721c24;"><strong>Note:</strong> Can produce false breakouts. Use volume confirmation when possible.</p>
+        </div>
+
+        <div class="strategy-card">
+            <h3>10. Mean Reversion Strategy</h3>
+            <p><strong>How it works:</strong> Opposite of trend-following. Buys when price drops below statistical mean, sells when above.</p>
+            <div class="example-box">
+                <h4>Example:</h4>
+                <ul>
+                    <li>20-day mean = Rs. 2,400, 2σ lower band = Rs. 2,200</li>
+                    <li>Price hits Rs. 2,180 (below lower band) → <strong>BUY</strong> (expect bounce back to mean)</li>
+                    <li>Price hits Rs. 2,620 (above upper band) → <strong>SELL</strong></li>
+                </ul>
+            </div>
+            <p class="best-for">✅ Best for: Range-bound, non-trending stocks</p>
+            <span class="risk-level risk-high">High Risk</span>
+            <p style="margin-top: 10px; color: #721c24;"><strong>Warning:</strong> Can cause losses if stock enters a strong trend. Don't fight the trend.</p>
+        </div>
+
+        <div class="strategy-card">
+            <h3>11. Momentum Strategy (ROC)</h3>
+            <p><strong>How it works:</strong> Uses Rate of Change (ROC) to compare short-term vs long-term momentum.</p>
+            <div class="example-box">
+                <h4>Example:</h4>
+                <ul>
+                    <li>12-day ROC = +5%, 26-day ROC = +2% → <strong>BUY</strong> (short-term momentum accelerating)</li>
+                    <li>12-day ROC = -3%, 26-day ROC = +1% → <strong>SELL</strong> (momentum slowing)</li>
+                    <li>Buy strongest momentum, sell weakest</li>
+                </ul>
+            </div>
+            <p class="best-for">✅ Best for: Momentum traders following relative strength</p>
+            <span class="risk-level risk-high">High Risk</span>
+        </div>
+
+        <div class="strategy-card">
+            <h3>12. Multi-Timeframe Strategy</h3>
+            <p><strong>How it works:</strong> Uses 3 EMAs + SMA. All moving averages aligned = strongest signal.</p>
+            <div class="example-box">
+                <h4>Example:</h4>
+                <ul>
+                    <li>EMA-5 > EMA-10 > EMA-20 > SMA-50 → <strong>BUY</strong> (all timeframes bullish)</li>
+                    <li>EMA-5 < EMA-10 < EMA-20 → <strong>SELL</strong> (3/4 bearish)</li>
+                    <li>Mixed alignment → <strong>HOLD</strong> (conflicting signals)</li>
+                </ul>
+            </div>
+            <p class="best-for">✅ Best for: Trend confirmation across multiple timeframes</p>
+            <span class="risk-level risk-low">Low Risk</span>
+            <p style="margin-top: 10px; color: #856404;"><strong>Note:</strong> More conservative than single timeframe. Waits for strong trend confirmation.</p>
+        </div>
+
+        <div class="metrics-guide">
+            <h3>📊 Understanding Results Table</h3>
+            
+            <div class="metric-explanation">
+                <strong>Total Return</strong>
+                <p>The overall profit/loss percentage from the strategy. <strong>Example:</strong> +25% means Rs. 100 became Rs. 125.</p>
+            </div>
+            
+            <div class="metric-explanation">
+                <strong>Buy & Hold Return</strong>
+                <p>How much you'd make by simply buying and holding the stock (benchmark). <strong>Example:</strong> If stock went from Rs. 100 to Rs. 120, this is 20%.</p>
+            </div>
+            
+            <div class="metric-explanation">
+                <strong>Outperformance</strong>
+                <p>How much better (or worse) the strategy did vs. simply holding. <strong>Example:</strong> +5% means strategy beat buy-and-hold by 5 percentage points.</p>
+            </div>
+            
+            <div class="metric-explanation">
+                <strong>Sharpe Ratio</strong>
+                <p>Risk-adjusted return measure. <strong>Higher is better.</strong> Above 1.0 is good, above 2.0 is excellent. <strong>Example:</strong> 1.5 means you got good returns for the risk taken.</p>
+            </div>
+            
+            <div class="metric-explanation">
+                <strong>Max Drawdown</strong>
+                <p>Worst losing streak from peak to trough. <strong>Example:</strong> -15% means the strategy lost 15% at its worst before recovering. Lower is better.</p>
+            </div>
+            
+            <div class="metric-explanation">
+                <strong>Win Rate</strong>
+                <p>Percentage of profitable trades. <strong>Example:</strong> 55% means 55 out of 100 trades were profitable. Higher is better but not everything (size of wins matters too).</p>
+            </div>
+            
+            <div class="metric-explanation">
+                <strong>Total Trades</strong>
+                <p>Number of buy/sell transactions. <strong>Example:</strong> 24 trades means the strategy bought and sold 12 times. Fewer trades = lower brokerage costs.</p>
+            </div>
+        </div>
+
+        <div class="recommendation">
+            <h3>💡 Pro Tips</h3>
+            <ul style="margin-left: 20px; margin-top: 10px;">
+                <li><strong>Start with Combined Strategy</strong> - safest option requiring multiple confirmations</li>
+                <li><strong>Use 2+ years</strong> of data for reliable results (includes different market conditions)</li>
+                <li><strong>Compare strategies</strong> on the same stock to find what works best for that particular stock</li>
+                <li><strong>Higher win rate + positive Sharpe</strong> = Good strategy</li>
+                <li><strong>Max drawdown below -20%</strong> = Manageable risk</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Backtest Controls -->
+    <div class="controls">
+        <h2 style="margin-bottom: 20px; color: #667eea;">🧪 Run Backtest</h2>
+        
+        <div class="form-row">
+            <div class="form-group">
+                <label>Stock Symbol</label>
+                <input type="text" id="symbol" placeholder="e.g., RELIANCE.NS" value="RELIANCE.NS">
+            </div>
+            <div class="form-group">
+                <label>Strategy</label>
+                <select id="strategy">
+                    <option value="sma_crossover">SMA Crossover (Trend)</option>
+                    <option value="rsi_strategy">RSI Strategy (Mean Reversion)</option>
+                    <option value="macd_strategy">MACD Strategy (Momentum)</option>
+                    <option value="bollinger_strategy">Bollinger Bands (Mean Reversion)</option>
+                    <option value="combined" selected>Combined Strategy (RECOMMENDED)</option>
+                    <option value="adx_strategy">ADX Trend Strength (Filter)</option>
+                    <option value="supertrend_strategy">SuperTrend (Trend + Stop Loss)</option>
+                    <option value="ichimoku_strategy">Ichimoku Cloud (Japanese)</option>
+                    <option value="breakout_strategy">Breakout Strategy (Momentum)</option>
+                    <option value="mean_reversion">Mean Reversion (Counter-Trend)</option>
+                    <option value="momentum_strategy">Momentum ROC (Relative Strength)</option>
+                    <option value="multi_timeframe">Multi-Timeframe EMA (Conservative)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Period</label>
+                <select id="period">
+                    <option value="1y">1 Year</option>
+                    <option value="2y" selected>2 Years (Recommended)</option>
+                    <option value="3y">3 Years</option>
+                </select>
+            </div>
+        </div>
+        <button class="btn btn-primary" onclick="runBacktest()">▶ Run Single Backtest</button>
+        <button class="btn btn-primary" onclick="compareStrategies()" style="margin-left: 10px;">📊 Compare All Strategies</button>
+    </div>
+    
+    <div id="results"></div>
+    
+    <script>
+        async function runBacktest() {
+            const symbol = document.getElementById('symbol').value;
+            const strategy = document.getElementById('strategy').value;
+            const period = document.getElementById('period').value;
+            
+            document.getElementById('results').innerHTML = '<div class="loading">⏳ Running backtest... This may take 30-60 seconds.</div>';
+            
+            try {
+                const response = await fetch(`/api/backtest/${symbol}?strategy=${strategy}&period=${period}`);
+                const data = await response.json();
+                
+                if (data.error) {
+                    document.getElementById('results').innerHTML = `<div class="result-card"><p style="color: red;">❌ Error: ${data.error}</p></div>`;
+                    return;
+                }
+                
+                const resultsHtml = `
+                    <div class="results">
+                        <div class="result-card">
+                            <h3>📈 ${data.strategy_name} Results</h3>
+                            <div class="metric">
+                                <span class="metric-label">Total Return</span>
+                                <span class="metric-value ${data.total_return >= 0 ? 'positive' : 'negative'}">${data.total_return}%</span>
+                            </div>
+                            <div class="metric">
+                                <span class="metric-label">Buy & Hold Return</span>
+                                <span class="metric-value">${data.buy_hold_return}%</span>
+                            </div>
+                            <div class="metric">
+                                <span class="metric-label">Outperformance</span>
+                                <span class="metric-value ${data.outperformance >= 0 ? 'positive' : 'negative'}">${data.outperformance}%</span>
+                            </div>
+                            <div class="metric">
+                                <span class="metric-label">Sharpe Ratio</span>
+                                <span class="metric-value ${data.sharpe_ratio >= 1 ? 'positive' : ''}">${data.sharpe_ratio} ${data.sharpe_ratio >= 1 ? '✓' : ''}</span>
+                            </div>
+                            <div class="metric">
+                                <span class="metric-label">Max Drawdown</span>
+                                <span class="metric-value negative">${data.max_drawdown}%</span>
+                            </div>
+                            <div class="metric">
+                                <span class="metric-label">Win Rate</span>
+                                <span class="metric-value ${data.win_rate >= 50 ? 'positive' : ''}">${data.win_rate}% ${data.win_rate >= 50 ? '✓' : ''}</span>
+                            </div>
+                            <div class="metric">
+                                <span class="metric-label">Total Trades</span>
+                                <span class="metric-value">${data.total_trades}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                document.getElementById('results').innerHTML = resultsHtml;
+                
+            } catch (error) {
+                document.getElementById('results').innerHTML = `<div class="result-card"><p style="color: red;">❌ Error: ${error.message}</p></div>`;
+            }
+        }
+        
+        async function compareStrategies() {
+            const symbol = document.getElementById('symbol').value;
+            const period = document.getElementById('period').value;
+            
+            document.getElementById('results').innerHTML = '<div class="loading">⏳ Comparing all strategies... This may take 1-2 minutes.</div>';
+            
+            try {
+                const response = await fetch(`/api/backtest/compare/${symbol}?period=${period}`);
+                const results = await response.json();
+                
+                if (results.error) {
+                    document.getElementById('results').innerHTML = `<div class="result-card"><p style="color: red;">❌ Error: ${results.error}</p></div>`;
+                    return;
+                }
+                
+                // The API returns { strategies: [...], symbol: ... }
+                const strategyResults = results.strategies || results;
+                
+                // Find best strategy
+                const bestStrategy = strategyResults.reduce((best, current) => 
+                    current.total_return > best.total_return ? current : best
+                );
+                
+                const tableHtml = `
+                    <div class="comparison-table">
+                        <h3>📊 Strategy Comparison - Which is Best?</h3>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Strategy</th>
+                                    <th>Total Return</th>
+                                    <th>Buy & Hold</th>
+                                    <th>Outperformance</th>
+                                    <th>Sharpe Ratio</th>
+                                    <th>Max Drawdown</th>
+                                    <th>Win Rate</th>
+                                    <th>Trades</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${strategyResults.map(r => `
+                                    <tr class="${r.strategy_name === bestStrategy.strategy_name ? 'winner' : ''}">
+                                        <td><strong>${r.strategy_name}</strong>${r.strategy_name === bestStrategy.strategy_name ? ' <span style="color: #28a745;">🏆 Winner</span>' : ''}</td>
+                                        <td class="${r.total_return >= 0 ? 'positive' : 'negative'}">${r.total_return}%</td>
+                                        <td>${r.buy_hold_return}%</td>
+                                        <td class="${r.outperformance >= 0 ? 'positive' : 'negative'}">${r.outperformance}%</td>
+                                        <td>${r.sharpe_ratio}</td>
+                                        <td class="negative">${r.max_drawdown}%</td>
+                                        <td>${r.win_rate}%</td>
+                                        <td>${r.total_trades}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+                
+                document.getElementById('results').innerHTML = tableHtml;
+                
+            } catch (error) {
+                document.getElementById('results').innerHTML = `<div class="result-card"><p style="color: red;">❌ Error: ${error.message}</p></div>`;
+            }
+        }
+    </script>
+    
+    <!-- Bottom Navigation -->
+    <div class="bottom-nav">
+        <a href="/" title="Home - Top Stocks"><i class="fas fa-home"></i> Home</a>
+        <a href="/research" title="Research All Stocks"><i class="fas fa-search"></i> Research</a>
+        <a href="/backtest" class="active" title="Backtest Strategies"><i class="fas fa-flask"></i> Backtest</a>
+        <a href="/portfolio" title="Portfolio Tracking"><i class="fas fa-briefcase"></i> Portfolio</a>
+        <a href="/market-overview" title="Market Overview"><i class="fas fa-chart-pie"></i> Market</a>
+    </div>
+</body>
+</html>

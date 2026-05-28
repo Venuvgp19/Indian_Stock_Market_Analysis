@@ -1,0 +1,279 @@
+{
+  "holdings": {},
+  "transactions": [
+    {
+      "symbol": "RELIANCE.NS",
+      "shares": 10,
+      "buy_price": 2400,
+      "buy_date": "2026-05-20",
+      "type": "BUY"
+    },
+    {
+      "symbol": "INFY.NS",
+      "shares": 15,
+      "buy_price": 1450,
+      "buy_date": "2026-05-20",
+      "type": "BUY"
+    },
+    {
+      "symbol": "HDFCBANK.NS",
+      "shares": 8,
+      "buy_price": 1680,
+      "buy_date": "2026-05-20",
+      "type": "BUY"
+    },
+    {
+      "symbol": "RELIANCE.NS",
+      "shares": 1,
+      "buy_price": 10000,
+      "buy_date": "2026-05-20",
+      "type": "BUY"
+    },
+    {
+      "symbol": "TCS.NS",
+      "shares": 2,
+      "buy_price": 2000,
+      "buy_date": "2026-05-20",
+      "type": "BUY"
+    },
+    {
+      "symbol": "INFY.NS",
+      "shares": 15,
+      "sell_price": 1194.9000244140625,
+      "sell_date": "2026-05-20",
+      "type": "SELL"
+    },
+    {
+      "symbol": "RELIANCE.NS",
+      "shares": 11,
+      "sell_price": 1356.300048828125,
+      "sell_date": "2026-05-20",
+      "type": "SELL"
+    },
+    {
+      "symbol": "HDFCBANK.NS",
+      "shares": 8,
+      "sell_price": 760.4000244140625,
+      "sell_date": "2026-05-20",
+      "type": "SELL"
+    },
+    {
+      "symbol": "TCS.NS",
+      "shares": 2,
+      "sell_price": 2329.10009765625,
+      "sell_date": "2026-05-20",
+      "type": "SELL"
+    },
+    {
+      "symbol": "BHARAIARTL.NS",
+      "shares": 5,
+      "buy_price": 1903.1,
+      "buy_date": "2026-05-20",
+      "type": "BUY"
+    },
+    {
+      "symbol": "ESCORTS.NS",
+      "shares": 1,
+      "buy_price": 2866,
+      "buy_date": "2026-05-20",
+      "type": "BUY"
+    },
+    {
+      "symbol": "BHARAIARTL.NS",
+      "shares": 5,
+      "sell_price": 1903.1,
+      "sell_date": "2026-05-20",
+      "type": "SELL"
+    },
+    {
+      "symbol": "BHARATIARTL.NS",
+      "shares": 1,
+      "buy_price": 1903.1,
+      "buy_date": "2026-05-20",
+      "type": "BUY"
+    },
+    {
+      "symbol": "BHARATIARTL.NS",
+      "shares": 1,
+      "sell_price": 1903.1,
+      "sell_date": "2026-05-20",
+      "type": "SELL"
+    },
+    {
+      "symbol": "BHARTIARTL.NS",
+      "shares": 1,
+      "buy_price": 1903.1,
+      "buy_date": "2026-05-20",
+      "type": "BUY"
+    },
+    {
+      "symbol": "NETWORK18.NS",
+      "shares": 1,
+      "buy_price": 31.57,
+      "buy_date": "2026-05-20",
+      "type": "BUY"
+    },
+    {
+      "symbol": "BERGEPAINT.NS",
+      "shares": 1,
+      "buy_price": 499.65,
+      "buy_date": "2026-05-20",
+      "type": "BUY"
+    },
+    {
+      "symbol": "TECHM.NS",
+      "shares": 1,
+      "buy_price": 1462.7,
+      "buy_date": "2026-05-20",
+      "type": "BUY"
+    },
+    {
+      "symbol": "TORNTPOWER.NS",
+      "shares": 1,
+      "buy_price": 1469.6,
+      "buy_date": "2026-05-20",
+      "type": "BUY"
+    },
+    {
+      "symbol": "HINDPETRO.NS",
+      "shares": 1,
+      "buy_price": 368.25,
+      "buy_date": "2026-05-20",
+      "type": "BUY"
+    },
+    {
+      "symbol": "DALBHARAT.NS",
+      "shares": 1,
+      "buy_price": 1704.9,
+      "buy_date": "2026-05-20",
+      "type": "BUY"
+    },
+    {
+      "symbol": "AHLUCONT.NS",
+      "shares": 1,
+      "buy_price": 780,
+      "buy_date": "2026-05-20",
+      "type": "BUY"
+    },
+    {
+      "symbol": "ABB.NS",
+      "shares": 1,
+      "buy_price": 6270,
+      "buy_date": "2026-05-20",
+      "type": "BUY"
+    },
+    {
+      "symbol": "ABB.NS",
+      "shares": 1,
+      "sell_price": 6270,
+      "sell_date": "2026-05-20",
+      "type": "SELL"
+    },
+    {
+      "symbol": "ESCORTS.NS",
+      "shares": 1,
+      "sell_price": 2866,
+      "sell_date": "2026-05-20",
+      "type": "SELL"
+    },
+    {
+      "symbol": "BHARTIARTL.NS",
+      "shares": 1,
+      "sell_price": 1903.1,
+      "sell_date": "2026-05-20",
+      "type": "SELL"
+    },
+    {
+      "symbol": "DALBHARAT.NS",
+      "shares": 1,
+      "sell_price": 1704.9,
+      "sell_date": "2026-05-20",
+      "type": "SELL"
+    },
+    {
+      "symbol": "TORNTPOWER.NS",
+      "shares": 1,
+      "sell_price": 1469.6,
+      "sell_date": "2026-05-20",
+      "type": "SELL"
+    },
+    {
+      "symbol": "TECHM.NS",
+      "shares": 1,
+      "sell_price": 1462.7,
+      "sell_date": "2026-05-20",
+      "type": "SELL"
+    },
+    {
+      "symbol": "AHLUCONT.NS",
+      "shares": 1,
+      "sell_price": 780,
+      "sell_date": "2026-05-20",
+      "type": "SELL"
+    },
+    {
+      "symbol": "BERGEPAINT.NS",
+      "shares": 1,
+      "sell_price": 499.65,
+      "sell_date": "2026-05-20",
+      "type": "SELL"
+    },
+    {
+      "symbol": "HINDPETRO.NS",
+      "shares": 1,
+      "sell_price": 368.25,
+      "sell_date": "2026-05-20",
+      "type": "SELL"
+    },
+    {
+      "symbol": "NETWORK18.NS",
+      "shares": 1,
+      "sell_price": 31.57,
+      "sell_date": "2026-05-20",
+      "type": "SELL"
+    },
+    {
+      "symbol": "BPCL.NS",
+      "shares": 1,
+      "buy_price": 295.95,
+      "buy_date": "2026-05-20",
+      "type": "BUY"
+    },
+    {
+      "symbol": "CRISIL.NS",
+      "shares": 1,
+      "buy_price": 4228.1,
+      "buy_date": "2026-05-20",
+      "type": "BUY"
+    },
+    {
+      "symbol": "CRISIL.NS",
+      "shares": 1,
+      "sell_price": 4228.1,
+      "sell_date": "2026-05-22",
+      "type": "SELL"
+    },
+    {
+      "symbol": "BPCL.NS",
+      "shares": 1,
+      "sell_price": 295.95,
+      "sell_date": "2026-05-22",
+      "type": "SELL"
+    },
+    {
+      "symbol": "TCS.NS",
+      "shares": 5000,
+      "buy_price": 1,
+      "buy_date": "2026-05-22",
+      "type": "BUY"
+    },
+    {
+      "symbol": "TCS.NS",
+      "shares": 5000,
+      "sell_price": 1,
+      "sell_date": "2026-05-27",
+      "type": "SELL"
+    }
+  ],
+  "watchlist": []
+}

@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Research - Indian Stock Market Analyzer 🇮🇳</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #667eea;
+            --primary-dark: #764ba2;
+            --secondary: #f093fb;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --dark: #1e293b;
+            --light: #f8fafc;
+            --gray: #64748b;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        /* Professional Header */
+        .header {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            text-align: center;
+            color: white;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+        
+        .tagline {
+            margin-top: 15px;
+            padding: 10px 20px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 25px;
+            display: inline-block;
+            font-size: 1em;
+        }
+        
+        /* Unified Navigation */
+        .nav-bar {
+            background: white;
+            padding: 15px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .nav-bar a {
+            color: var(--dark);
+            text-decoration: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            transition: all 0.3s;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .nav-bar a:hover {
+            background: var(--primary);
+            color: white;
+        }
+        
+        .nav-bar a.active {
+            background: var(--primary);
+            color: white;
+        }
+        
+        /* Cards */
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        }
+        
+        .card h2 {
+            color: var(--dark);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        /* Search */
+        .search-box {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .search-box input {
+            flex: 1;
+            padding: 15px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 1.1em;
+        }
+        
+        .btn {
+            padding: 15px 30px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        .btn:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+        }
+        
+        .btn-analyze {
+            padding: 10px 20px;
+            background: var(--success);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        .btn-analyze:hover {
+            background: #059669;
+            transform: translateY(-2px);
+        }
+        
+        /* Stock Grid */
+        .stock-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+        }
+        
+        .stock-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transition: all 0.3s;
+        }
+        
+        .stock-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+        }
+        
+        .stock-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .stock-symbol {
+            font-size: 1.4em;
+            font-weight: bold;
+            color: var(--dark);
+        }
+        
+        .stock-name {
+            color: var(--gray);
+            margin-bottom: 10px;
+            font-size: 0.9em;
+        }
+        
+        .stock-sector {
+            display: inline-block;
+            padding: 5px 12px;
+            background: #e0e7ff;
+            border-radius: 15px;
+            font-size: 0.8em;
+            color: var(--primary-dark);
+            margin-bottom: 15px;
+        }
+        
+        /* Category Tabs */
+        .category-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .category-tab {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 25px;
+            background: #f1f5f9;
+            color: var(--dark);
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+        
+        .category-tab.active {
+            background: var(--primary);
+            color: white;
+        }
+        
+        .category-tab:hover {
+            background: var(--primary);
+            color: white;
+        }
+        
+        /* Analysis Result */
+        .analysis-result {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .metric-card {
+            background: #f8fafc;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+        }
+        
+        .metric-card .metric-label {
+            color: var(--gray);
+            font-size: 0.9em;
+            margin-bottom: 8px;
+        }
+        
+        .metric-card .metric-value {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: var(--dark);
+        }
+        
+        .recommendation {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 12px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+        
+        .rec-strong-buy { background: #d1fae5; color: #065f46; }
+        .rec-buy { background: #dcfce7; color: #166534; }
+        .rec-hold { background: #fef3c7; color: #92400e; }
+        .rec-sell { background: #fee2e2; color: #991b1b; }
+        .rec-strong-sell { background: #fecaca; color: #7f1d1d; }
+        
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 40px;
+            font-size: 1.2em;
+            color: var(--gray);
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .bottom-nav { 
+            position: fixed; 
+            bottom: 0; 
+            left: 0; 
+            right: 0; 
+            background: rgba(255,255,255,0.95); 
+            backdrop-filter: blur(10px); 
+            padding: 12px 20px; 
+            display: flex; 
+            justify-content: center; 
+            gap: 8px; 
+            flex-wrap: wrap; 
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.1); 
+            z-index: 1000; 
+        }
+        .bottom-nav a { 
+            color: var(--primary-dark); 
+            text-decoration: none; 
+            padding: 8px 16px; 
+            background: #f1f5f9; 
+            border-radius: 20px; 
+            transition: all 0.3s; 
+            font-size: 0.85em; 
+            font-weight: 500; 
+            border: 1px solid #e2e8f0; 
+        }
+        .bottom-nav a:hover { background: var(--primary); color: white; }
+        .bottom-nav a.active { background: var(--primary); color: white; }
+        body { padding-bottom: 80px; }
+        
+        /* Error */
+        .error {
+            background: #fee2e2;
+            color: #991b1b;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .no-data {
+            text-align: center;
+            padding: 40px;
+            color: var(--gray);
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header h1 { font-size: 1.8em; }
+            .search-box { flex-direction: column; }
+            .stock-grid { grid-template-columns: 1fr; }
+            .analysis-result { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Professional Header -->
+        <div class="header">
+            <h1><i class="fas fa-microscope"></i> Stock Research</h1>
+            <p>Deep Dive Analysis for Indian Stocks</p>
+            <div class="tagline">🇮🇳 Technical Analysis & News Sentiment for NSE & BSE</div>
+        </div>
+        
+        <!-- Unified Navigation -->
+        <div class="nav-bar">
+            <a href="/"><i class="fas fa-home"></i> Home</a>
+            <a href="/research" class="active"><i class="fas fa-search"></i> Research</a>
+            <a href="/backtest"><i class="fas fa-chart-bar"></i> Backtest</a>
+            <a href="/portfolio"><i class="fas fa-chart-pie"></i> Portfolio</a>
+            <a href="/market-overview"><i class="fas fa-globe"></i> Market</a>
+        </div>
+
+        <!-- Search Section -->
+        <div class="card">
+            <h2><i class="fas fa-search"></i> Search Stock</h2>
+            <div class="search-box">
+                <input type="text" id="search-input" placeholder="Enter stock symbol (e.g., RELIANCE.NS)">
+                <button class="btn" onclick="analyzeStock()">
+                    <i class="fas fa-chart-line"></i> Analyze
+                </button>
+            </div>
+            <div id="stock-details">
+                <!-- Dynamic content -->
+            </div>
+        </div>
+
+        <!-- Browse Stocks -->
+        <div class="card">
+            <h2><i class="fas fa-list"></i> Browse Stocks by Category</h2>
+            
+            <div class="category-tabs">
+                <button class="category-tab active" onclick="loadCategory('nifty50')">Nifty 50</button>
+                <button class="category-tab" onclick="loadCategory('nifty_next50')">Nifty Next 50</button>
+                <button class="category-tab" onclick="loadCategory('midcap')">Midcap 100</button>
+            </div>
+            
+            <div id="category-stocks" class="stock-grid">
+                <!-- Dynamic content -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentCategory = 'nifty50';
+        
+        // Load stocks by category
+        async function loadCategory(category) {
+            currentCategory = category;
+            
+            // Update active tab
+            document.querySelectorAll('.category-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            try {
+                const response = await fetch('/api/stocks/by-category');
+                const data = await response.json();
+                
+                const stocks = data[category] || [];
+                const grid = document.getElementById('category-stocks');
+                grid.innerHTML = '';
+                
+                stocks.forEach(stock => {
+                    grid.innerHTML += `
+                        <div class="stock-card">
+                            <div class="stock-header">
+                                <div class="stock-symbol">${stock.symbol}</div>
+                            </div>
+                            <div class="stock-name">${stock.name}</div>
+                            <div class="stock-sector">${category.replace('_', ' ').toUpperCase()}</div>
+                            <button class="btn-analyze" onclick="analyzeStock('${stock.symbol}')">
+                                <i class="fas fa-chart-line"></i> Analyze
+                            </button>
+                        </div>
+                    `;
+                });
+            } catch (error) {
+                console.error('Error loading stocks:', error);
+            }
+        }
+        
+        // Analyze stock - now redirects to full comprehensive analysis page
+        async function analyzeStock(symbol) {
+            if (!symbol) {
+                symbol = document.getElementById('search-input').value.trim();
+            }
+            
+            if (!symbol) {
+                alert('Please enter a stock symbol');
+                return;
+            }
+            
+            // Show loading while redirecting
+            const detailsDiv = document.getElementById('stock-details');
+            if (detailsDiv) {
+                detailsDiv.innerHTML = '<div class="loading"><div class="spinner"></div><p>Loading comprehensive analysis... Please wait.</p></div>';
+            }
+            
+            // Redirect directly to the comprehensive stock detail page
+            window.location.href = '/stock/' + symbol;
+        }
+        
+        // Handle Enter key
+        document.getElementById('search-input')?.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') analyzeStock();
+        });
+        
+        // Load default category on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            loadCategory('nifty50');
+        });
+    </script>
+    
+    <!-- Bottom Navigation -->
+    <div class="bottom-nav">
+        <a href="/" title="Home - Top Stocks"><i class="fas fa-home"></i> Home</a>
+        <a href="/research" class="active" title="Research All Stocks"><i class="fas fa-search"></i> Research</a>
+        <a href="/backtest" title="Backtest Strategies"><i class="fas fa-flask"></i> Backtest</a>
+        <a href="/portfolio" title="Portfolio Tracking"><i class="fas fa-briefcase"></i> Portfolio</a>
+        <a href="/market-overview" title="Market Overview"><i class="fas fa-chart-pie"></i> Market</a>
+    </div>
+</body>
+</html>
