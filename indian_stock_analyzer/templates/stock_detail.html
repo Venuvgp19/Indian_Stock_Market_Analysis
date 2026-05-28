@@ -1116,51 +1116,63 @@
                 const perspectives = data.perspectives || {};
                 const agents = ['technical', 'fundamental', 'ml', 'risk', 'portfolio'];
 
-                // Log for debugging
-                console.log('Poll status:', data.status, 'completed:', data.completed_agents, 'perspectives keys:', Object.keys(perspectives));
+                // Log raw data for debugging
+                console.log('Poll raw:', JSON.stringify({status: data.status, completed: data.completed_agents, perspectiveKeys: Object.keys(perspectives)}));
 
-                // Determine which agent is currently running based on completed count
-                const completedCount = data.completed_agents || 0;
-                const currentRunningIdx = completedCount < agents.length ? completedCount : -1;
-
-                // Process ALL agents every poll — update any whose state changed
+                // Check each agent directly by looking at perspectives data
                 for (let i = 0; i < agents.length; i++) {
                     const agentKey = agents[i];
                     const agentName = mfAgentConfig[i].name;
                     const agentData = perspectives[agentName];
 
-                    if (agentData && agentData.done) {
-                        // Agent is DONE
-                        if (mfAgentState[agentKey] !== 'done') {
-                            mirofishAgentsCompleted.add(agentKey);
-                            mfAgentState[agentKey] = 'done';
-                            let commentary = agentData.perspective || 'No commentary available.';
-                            if (commentary.startsWith('[ERROR:')) {
-                                commentary = '<span style="color: #dc2626;">' + commentary + '</span>';
+                    // DEBUG: log what we found for this agent
+                    console.log(`Checking agent ${agentName}:`, agentData ? {done: agentData.done, hasPerspective: !!agentData.perspective} : 'NOT IN PERSPECTIVES');
+
+                    if (agentData) {
+                        // Agent data exists in perspectives
+                        if (agentData.done) {
+                            // Agent is DONE
+                            if (mfAgentState[agentKey] !== 'done') {
+                                mirofishAgentsCompleted.add(agentKey);
+                                mfAgentState[agentKey] = 'done';
+                                let commentary = agentData.perspective || 'No commentary available.';
+                                if (commentary.startsWith('[ERROR:')) {
+                                    commentary = '<span style="color: #dc2626;">' + commentary + '</span>';
+                                }
+                                console.log(`⭐ Agent ${agentName} DONE, calling mfSetAgentStatus`);
+                                mfSetAgentStatus(agentKey, 'done', commentary);
                             }
-                            console.log(`Agent ${agentName} DONE, updating card`);
-                            mfSetAgentStatus(agentKey, 'done', commentary);
+                        } else {
+                            // Agent has data but not done - it's running
+                            if (mfAgentState[agentKey] !== 'analyzing' && data.status === 'running') {
+                                mfAgentState[agentKey] = 'analyzing';
+                                console.log(`⭐ Agent ${agentName} RUNNING, calling mfSetAgentStatus`);
+                                mfSetAgentStatus(agentKey, 'analyzing');
+                            }
                         }
-                    } else if (i === currentRunningIdx && data.status === 'running') {
-                        // This is the CURRENT agent being processed by backend
-                        if (mfAgentState[agentKey] !== 'analyzing') {
-                            mfAgentState[agentKey] = 'analyzing';
-                            console.log(`Agent ${agentName} is RUNNING (backend idx=${currentRunningIdx}), updating card`);
-                            mfSetAgentStatus(agentKey, 'analyzing');
+                    } else {
+                        // No data yet for this agent - only mark as running if it's the current one
+                        const completedCount = data.completed_agents || 0;
+                        if (i === completedCount && data.status === 'running') {
+                            if (mfAgentState[agentKey] !== 'analyzing') {
+                                mfAgentState[agentKey] = 'analyzing';
+                                console.log(`⭐ Agent ${agentName} CURRENT (idx=${i}), calling mfSetAgentStatus`);
+                                mfSetAgentStatus(agentKey, 'analyzing');
+                            }
                         }
                     }
                 }
 
                 // Update progress bar: step 2 = started, each completed agent adds 1
-                const displayProgress = 2 + completedCount;
+                const displayProgress = 2 + (data.completed_agents || 0);
                 mfUpdateProgress(displayProgress, 6);
-                console.log(`Progress updated: ${displayProgress}/6 (completed: ${completedCount})`);
+                console.log(`Progress: ${displayProgress}/6, completed: ${data.completed_agents}`);
 
                 if (data.report && data.status === 'complete') {
                     clearInterval(mirofishPollInterval);
                     mfUpdateProgress(6, 6);
                     mfShowVerdict(data.report);
-                    // Force update any remaining agents that might have been missed
+                    // Final sweep: force update all agents
                     for (let i = 0; i < agents.length; i++) {
                         const agentKey = agents[i];
                         const agentName = mfAgentConfig[i].name;
