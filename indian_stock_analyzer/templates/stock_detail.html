@@ -1123,10 +1123,13 @@
                 for (let i = 0; i < agents.length; i++) {
                     const agentKey = agents[i];
                     const agentName = mfAgentConfig[i].name;
-                    const agentData = perspectives[agentName];
+                    // Backend uses underscores in keys (e.g. "Technical_Analyst")
+                    // Try both the display name and underscore version
+                    const underscoreName = agentName.replace(/ /g, '_');
+                    let agentData = perspectives[agentName] || perspectives[underscoreName];
 
                     // DEBUG: log what we found for this agent
-                    console.log(`Checking agent ${agentName}:`, agentData ? {done: agentData.done, hasPerspective: !!agentData.perspective} : 'NOT IN PERSPECTIVES');
+                    console.log(`Checking agent ${agentName} (also tried ${underscoreName}):`, agentData ? {done: agentData.done, hasPerspective: !!agentData.perspective} : 'NOT IN PERSPECTIVES');
 
                     if (agentData) {
                         // Agent data exists in perspectives
@@ -1176,7 +1179,8 @@
                     for (let i = 0; i < agents.length; i++) {
                         const agentKey = agents[i];
                         const agentName = mfAgentConfig[i].name;
-                        const agentData = perspectives[agentName];
+                        const underscoreName = agentName.replace(/ /g, '_');
+                        const agentData = perspectives[agentName] || perspectives[underscoreName];
                         if (agentData && agentData.done && mfAgentState[agentKey] !== 'done') {
                             mfAgentState[agentKey] = 'done';
                             let commentary = agentData.perspective || 'No commentary available.';
