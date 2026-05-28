@@ -980,6 +980,7 @@ def mirofish_run_with_data(symbol):
                 'report': None,
                 'completed_agents': 0,
                 'total_agents': len(miro.agents),
+                'agents': miro.agents,
                 'miro': miro,
                 'stock_data': stock_data,
                 'graph': graph
