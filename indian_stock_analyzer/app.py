@@ -973,6 +973,8 @@ def mirofish_run_with_data(symbol):
             mirofish_jobs[job_id] = {
                 'job_id': job_id,
                 'symbol': symbol,
+                'company_name': stock_data.get('company_name', symbol) if stock_data else symbol,
+                'current_price': stock_data.get('current_price', 'N/A') if stock_data else 'N/A',
                 'status': 'running',
                 'perspectives': {},
                 'report': None,
