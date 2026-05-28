@@ -949,7 +949,9 @@ def mirofish_run_with_data(symbol):
         miro.stock_symbol = symbol
         # Force model to kimi-k2.6:cloud explicitly (NOT qwen)
         miro.llm.model = "kimi-k2.6:cloud"
-        print(f"  [MiroFish-inline] Initialized. Model set to: {miro.llm.model}")
+        # CRITICAL: create stock agents so miro.agents is populated
+        miro.create_stock_agents(symbol)
+        print(f"  [MiroFish-inline] Initialized. Model set to: {miro.llm.model}. Agents: {len(miro.agents)}")
 
         # Build agent-to-agent message graph (same as standalone page)
         agent_names = [a['name'] for a in miro.agents]
@@ -1053,7 +1055,9 @@ def mirofish_start(symbol):
         miro.stock_symbol = symbol
         # Force model to kimi-k2.6:cloud (not qwen)
         miro.llm.model = "kimi-k2.6:cloud"
-        print(f"  [MiroFish] Initialized. Model set to: {miro.llm.model}")
+        # CRITICAL: create stock agents so miro.agents is populated
+        miro.create_stock_agents(symbol)
+        print(f"  [MiroFish] Initialized. Model set to: {miro.llm.model}. Agents: {len(miro.agents)}")
         
         # Fetch stock data DIRECTLY using internal data_fetcher (no HTTP self-request!)
         stock_data = None
